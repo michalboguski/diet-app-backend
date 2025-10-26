@@ -38,3 +38,91 @@ out/
 
 ### Kotlin ###
 .kotlin
+
+### Gradle ###
+.gradle/
+!gradle/wrapper/gradle-wrapper.properties
+!gradlew
+!gradlew.bat
+
+# Build output (submodules)
+Project/**/build/
+
+### Kotlin / Java ###
+*.class
+*.log
+*.hprof
+*.kt~*
+*.java~*
+hs_err_pid*
+replay_pid*
+.DS_Store
+
+### IntelliJ IDEA / JetBrains ###
+.idea/
+
+# IntelliJ project cache files
+.idea_modules/
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/dataSources/
+.idea/**/dataSources.ids
+.idea/**/sqlDataSources.xml
+.idea/**/dynamic.xml
+.idea/**/uiDesigner.xml
+.idea/**/gradle.xml
+.idea/**/libraries
+.idea/**/shelf/
+.idea/**/codeStyles/
+.idea/**/assetWizardSettings.xml
+
+
+### OS system files ###
+Thumbs.db
+
+### Logs ###
+logs/
+**/log/
+**/logs/
+*.tmp
+*.swp
+
+### Environment / Config ###
+.env
+.env.*
+application-local.yml
+application-local.properties
+*.local.yml
+*.local.properties
+
+### Generated sources ###
+# jOOQ / OpenAPI generated code
+Project/**/build/generated/
+Project/**/build/tmp/
+Project/**/build/jooq/
+Project/**/build/openapi/
+
+### Database ###
+*.db
+*.mv.db
+*.sqlite
+*.h2.db
+
+### Flyway ###
+# Flyway logs but not migrations
+!Project/**/src/main/resources/db/migration/
+
+### Temporary / Tooling ###
+*.bak
+*.orig
+*.rej
+*.diff
+*.patch
+*.lock
+*.pid
+
+### System artifacts ###
+**/.gradle/
+**/build/
+**/out/
+**/tmp/
