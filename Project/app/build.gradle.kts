@@ -1,9 +1,8 @@
 plugins {
-    kotlin("jvm")
-    id("org.springframework.boot")
-    id("io.spring.dependency-management")
-kotlin("plugin.spring")
-groovy
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.spring.boot)
+    alias(libs.plugins.spring.dependency.management)
+    groovy
 }
 
 dependencies {
@@ -13,33 +12,17 @@ dependencies {
     implementation(project(":scraper"))
     implementation(project(":translate"))
 
-    implementation("org.springframework.boot:spring-boot-starter-web")
-
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-    implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.25")
-
-
-    implementation("io.github.microutils:kotlin-logging-jvm:3.0.5")
-
-    implementation("org.modelmapper:modelmapper:3.2.0")
-
-    implementation("io.vavr:vavr:0.10.2")
-    implementation("io.vavr:vavr-kotlin:0.10.2")
-    implementation("io.vavr:vavr-jackson:0.10.2")
-
-  implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13")
-
-
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation(platform("org.spockframework:spock-bom:2.3-groovy-4.0"))
-    testImplementation("org.spockframework:spock-core")
-    testImplementation("org.spockframework:spock-spring")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-}
-
-repositories {
-    mavenCentral()
+    implementation(libs.spring.boot.starter.web )
+    implementation(libs.jackson.module.kotlin)
+    implementation(libs.kotlin.reflect)
+    implementation(libs.kotlin.logging.jvm)
+    implementation(libs.modelmapper)
+    implementation(libs.bundles.vavr)
+    implementation(libs.springdoc.openapi.ui)
+    testImplementation(libs.spring.boot.starter.test)
+    testImplementation(platform(libs.spock.bom))
+    testImplementation(libs.bundles.spock)
+    testRuntimeOnly(libs.junit.platform.launcher)
 }
 
 springBoot {
@@ -48,7 +31,7 @@ springBoot {
 
 
 tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
-    jvmArgs("-Xms1g","-Xmx2g","-XX:MaxMetaspaceSize=4g")
+    jvmArgs("-Xms1g", "-Xmx2g", "-XX:MaxMetaspaceSize=4g")
 }
 
 tasks.named("bootRun") {

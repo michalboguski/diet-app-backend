@@ -34,7 +34,3 @@ openApiGenerate {
 tasks.compileKotlin {
     dependsOn(tasks.openApiGenerate)
 }
-
-tasks.test {
-    useJUnitPlatform()
-}

@@ -1,22 +1,14 @@
 plugins {
-    id("io.spring.dependency-management")
-    kotlin("jvm")
-    kotlin("plugin.spring")
-}
-
-repositories {
-    mavenCentral()
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.spring.dependency.management)
 }
 
 dependencies {
-
-    implementation(platform("org.springframework.boot:spring-boot-dependencies:3.5.5"))
-
+    implementation(platform(libs.spring.boot.bom))
+    testImplementation(platform(libs.spock.bom))
+    implementation(libs.spring.boot.starter)
+    implementation(libs.jackson.module.kotlin)
     testImplementation(kotlin("test"))
-    implementation("org.springframework.boot:spring-boot-starter")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.25")
-    implementation("io.vavr:vavr:0.10.2")
-    implementation("io.vavr:vavr-kotlin:0.10.2")
-    implementation("io.vavr:vavr-jackson:0.10.2")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    implementation(libs.kotlin.reflect)
+    implementation(libs.bundles.vavr)
 }

@@ -1,41 +1,42 @@
 plugins {
-    id("org.flywaydb.flyway") version "11.0.1"
-    kotlin("jvm")
-    id("io.spring.dependency-management")
-    kotlin("plugin.spring")
-    id("org.jooq.jooq-codegen-gradle") version "3.20.0"
+    alias(libs.plugins.flyway)
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.spring.dependency.management)
+    alias(libs.plugins.jooq)
     groovy
+}
+
+dependencies {
+    implementation(project(":diet"))
+
+    implementation(libs.jooq)
+    implementation(libs.flyway.core)
+    implementation(libs.postgresql)
+    implementation(platform(libs.spring.boot.bom))
+    implementation(libs.spring.boot.starter)
+    implementation(libs.jackson.module.kotlin)
+    jooqCodegen(libs.postgresql)
+    jooqCodegen(libs.jooq.meta.extensions)
+    runtimeOnly(libs.flyway.database.postgresql)
+    runtimeOnly(libs.postgresql)
+    implementation(libs.vavr)
+    implementation(libs.vavr.kotlin)
+    implementation(libs.vavr.jackson)
+
+    testImplementation(kotlin("test"))
+    testImplementation(libs.spring.boot.starter.test)
+    testImplementation(platform(libs.spock.bom))
+    testImplementation(libs.spock.core)
+    testImplementation(libs.spock.spring)
+    testRuntimeOnly(libs.junit.platform.launcher)
 }
 
 buildscript {
     repositories { mavenCentral() }
     dependencies {
-        classpath("org.flywaydb:flyway-database-postgresql:10.0.1")
-        classpath("org.postgresql:postgresql:42.7.4")
+        classpath(libs.flyway.database.postgresql)
+        classpath(libs.postgresql)
     }
-}
-
-dependencies {
-    implementation(project(":diet"))
-    implementation("org.flywaydb:flyway-core:10.0.1")
-    implementation("org.flywaydb:flyway-database-postgresql:10.0.1")
-    testImplementation(kotlin("test"))
-    implementation("org.jooq:jooq:3.20.0")
-    implementation("org.postgresql:postgresql:42.7.4")
-    jooqCodegen("org.postgresql:postgresql:42.7.4")
-    jooqCodegen("org.jooq:jooq-meta-extensions:3.20.0")
-    implementation("io.vavr:vavr:0.10.2")
-    implementation("io.vavr:vavr-kotlin:0.10.2")
-    implementation("io.vavr:vavr-jackson:0.10.2")
-    implementation(platform("org.springframework.boot:spring-boot-dependencies:3.5.5"))
-    implementation("org.springframework.boot:spring-boot-starter")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-    implementation("io.vavr:vavr-jackson:0.10.2")
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation(platform("org.spockframework:spock-bom:2.3-groovy-4.0"))
-    testImplementation("org.spockframework:spock-core")
-    testImplementation("org.spockframework:spock-spring")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 jooq {
