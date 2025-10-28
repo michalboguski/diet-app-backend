@@ -19,7 +19,7 @@ paths:
                 items: { $ref: '#/components/schemas/User' }
 
     post:
-      tags: [Users]
+      tags: [users]
       operationId: createUser
       summary: Create user
       requestBody:
