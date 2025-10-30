@@ -3,6 +3,7 @@ kotlin = "1.9.25"
 spring-boot = "3.5.0"
 spring-dependency-management = "1.1.6"
 springdoc = "2.6.0"
+swagger = "2.2.23"
 jooq = "3.20.0"
 flyway = "11.2.0"
 postgres = "42.7.4"
@@ -24,6 +25,14 @@ spring-boot-starter-validation = { group = "org.springframework.boot", name = "s
 spring-boot-starter-data-jpa = { group = "org.springframework.boot", name = "spring-boot-starter-data-jpa" }
 spring-boot-starter-actuator = { group = "org.springframework.boot", name = "spring-boot-starter-actuator" }
 spring-boot-starter-test =   { group = "org.springframework.boot", name = "spring-boot-starter-test" }
+spring-web = { group = "org.springframework", name = "spring-web" }
+spring-context = { group = "org.springframework", name = "spring-context" }
+swagger-models = { group = "io.swagger.core.v3", name = "swagger-models", version.ref = "swagger" }
+swagger-annotations = { group = "io.swagger.core.v3", name = "swagger-annotations", version.ref = "swagger" }
+jakarta-annotation = { group = "jakarta.annotation", name = "jakarta.annotation-api", version = "3.0.0" }
+jakarta-validation = { group = "jakarta.validation", name = "jakarta.validation-api", version = "3.1.0" }
+jakarta-servlet = { group = "jakarta.servlet", name = "jakarta.servlet-api", version = "6.0.0" }
+
 kotlin-reflect = { group = "org.jetbrains.kotlin", name = "kotlin-reflect", version.ref = "kotlin" }
 jackson-module-kotlin = { group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin", version.ref = "jackson" }
 postgresql = { group = "org.postgresql", name = "postgresql", version.ref = "postgres" }
