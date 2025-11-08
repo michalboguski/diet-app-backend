@@ -1,0 +1,89 @@
+[versions]
+kotlin = "1.9.25"
+spring-boot = "3.5.0"
+spring-dependency-management = "1.1.6"
+springdoc = "2.6.0"
+swagger = "2.2.23"
+jooq = "3.20.0"
+flyway = "11.2.0"
+postgres = "42.7.4"
+jackson = "2.17.2"
+junit = "5.10.2"
+mockk = "1.13.12"
+testcontainers = "1.20.2"
+kotlin-logging = "3.0.5"
+modelmapper = "3.2.0"
+vavr = "0.10.2"
+spock = "2.3-groovy-4.0"
+junit-platform = "1.10.2"
+
+[libraries]
+spring-boot-bom = { group = "org.springframework.boot", name = "spring-boot-dependencies", version.ref = "spring-boot" }
+spring-boot-starter =        { group = "org.springframework.boot", name = "spring-boot-starter" }
+spring-boot-starter-web =    { group = "org.springframework.boot", name = "spring-boot-starter-web" }
+spring-boot-starter-validation = { group = "org.springframework.boot", name = "spring-boot-starter-validation" }
+spring-boot-starter-data-jpa = { group = "org.springframework.boot", name = "spring-boot-starter-data-jpa" }
+spring-boot-starter-actuator = { group = "org.springframework.boot", name = "spring-boot-starter-actuator" }
+spring-boot-starter-test =   { group = "org.springframework.boot", name = "spring-boot-starter-test" }
+spring-web = { group = "org.springframework", name = "spring-web" }
+spring-context = { group = "org.springframework", name = "spring-context" }
+swagger-models = { group = "io.swagger.core.v3", name = "swagger-models", version.ref = "swagger" }
+swagger-annotations = { group = "io.swagger.core.v3", name = "swagger-annotations", version.ref = "swagger" }
+jakarta-annotation = { group = "jakarta.annotation", name = "jakarta.annotation-api", version = "3.0.0" }
+jakarta-validation = { group = "jakarta.validation", name = "jakarta.validation-api", version = "3.1.0" }
+jakarta-servlet = { group = "jakarta.servlet", name = "jakarta.servlet-api", version = "6.0.0" }
+
+kotlin-reflect = { group = "org.jetbrains.kotlin", name = "kotlin-reflect", version.ref = "kotlin" }
+jackson-module-kotlin = { group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin", version.ref = "jackson" }
+postgresql = { group = "org.postgresql", name = "postgresql", version.ref = "postgres" }
+flyway-database-postgresql = { group = "org.flywaydb", name = "flyway-database-postgresql", version.ref = "flyway" }
+flyway-core = { group = "org.flywaydb", name = "flyway-core", version.ref = "flyway" }
+jooq = { group = "org.jooq", name = "jooq", version.ref = "jooq" }
+jooq-meta-extensions = { group = "org.jooq", name = "jooq-meta-extensions", version.ref = "jooq" }
+springdoc-openapi-ui = { group = "org.springdoc", name = "springdoc-openapi-starter-webmvc-ui", version.ref = "springdoc" }
+junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "junit" }
+mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
+testcontainers = { group = "org.testcontainers", name = "testcontainers", version.ref = "testcontainers" }
+testcontainers-junit-jupiter = { group = "org.testcontainers", name = "junit-jupiter", version.ref = "testcontainers" }
+testcontainers-postgresql = { group = "org.testcontainers", name = "postgresql", version.ref = "testcontainers" }
+kotlin-logging-jvm = { group = "io.github.microutils", name = "kotlin-logging-jvm", version.ref = "kotlin-logging" }
+modelmapper = { group = "org.modelmapper", name = "modelmapper", version.ref = "modelmapper" }
+vavr = { group = "io.vavr", name = "vavr", version.ref = "vavr" }
+vavr-kotlin = { group = "io.vavr", name = "vavr-kotlin", version.ref = "vavr" }
+vavr-jackson = { group = "io.vavr", name = "vavr-jackson", version.ref = "vavr" }
+spock-bom = { group = "org.spockframework", name = "spock-bom", version.ref = "spock" }
+spock-core = { group = "org.spockframework", name = "spock-core" }
+spock-spring = { group = "org.spockframework", name = "spock-spring" }
+junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform-launcher", version.ref = "junit-platform" }
+
+[bundles]
+spring = [
+    "spring-boot-starter",
+    "spring-boot-starter-web",
+    "spring-boot-starter-validation",
+    "spring-boot-starter-data-jpa",
+    "spring-boot-starter-actuator",
+    "jackson-module-kotlin",
+    "kotlin-reflect"
+]
+test = [
+    "spring-boot-starter-test",
+    "junit-jupiter",
+    "mockk",
+    "testcontainers",
+    "testcontainers-junit-jupiter",
+    "testcontainers-postgresql",
+    "spock-core",
+    "spock-spring",
+    "junit-platform-launcher"
+]
+db = [ "postgresql", "flyway-core", "jooq" ]
+vavr = [ "vavr", "vavr-kotlin", "vavr-jackson" ]
+spock = [ "spock-core", "spock-spring" ]
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
+spring-dependency-management = { id = "io.spring.dependency-management", version.ref = "spring-dependency-management" }
+jooq = { id = "org.jooq.jooq-codegen-gradle", version.ref = "jooq" }
+flyway = {id = "org.flywaydb.flyway", version.ref = "flyway"}
