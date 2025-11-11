@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.jvm) apply false
     alias(libs.plugins.spring.dependency.management) apply false
     alias(libs.plugins.jooq) apply false
+    alias(libs.plugins.kotlin.spring) apply false
 }
 
 group = "pl.edu.pjwstk.s25236.diet_app"
@@ -23,6 +24,7 @@ subprojects {
         extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension>("kotlin") {
             jvmToolchain(21)
         }
+        apply(plugin = "org.jetbrains.kotlin.plugin.spring")
     }
 
     plugins.withType<JavaPlugin> {

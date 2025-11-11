@@ -10,9 +10,11 @@ create table if not exists ingredient
     name text NOT NULL UNIQUE
 );
 
-CREATE TABLE ingredient_nutrient
+CREATE TABLE if not exists ingredient_nutrient
 (
-    ingredient_id BIGINT NOT NULL REFERENCES ingredient (id) ON DELETE CASCADE,
+    ingredient_id smallint NOT NULL REFERENCES ingredient (id) ON DELETE CASCADE,
     nutrient_id   BIGINT NOT NULL REFERENCES nutrient (id) ON DELETE CASCADE,
+    amount smallint NOT NULL,
+    unit text NOT NULL UNIQUE,
     PRIMARY KEY (ingredient_id, nutrient_id)
 );

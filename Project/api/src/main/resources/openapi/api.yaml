@@ -1,29 +1,8 @@
 openapi: 3.0.3
 info:
-  title: api
-  version: 0.1.0
+    title: api
+    version: 0.1.0
 
 paths:
-  /api/nutrients:
-    get:
-      tags: [nutrients]
-      operationId: listNutrients
-      summary: Lista witamin
-      responses:
-        "200":
-          description: ok
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/NutrientsList' }
-
-components:
-  schemas:
-    NutrientsList:
-      type: array
-      items: { $ref: '#/components/schemas/NutrientListItem' }
-
-    NutrientListItem:
-      type: object
-      required: [name]
-      properties:
-        name: { type: string }
+    '/nutrients':
+        $ref: 'nutrients.yaml#/paths/~1nutrients'

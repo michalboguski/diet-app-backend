@@ -8,10 +8,7 @@ plugins {
 
 dependencies {
     implementation(project(":diet"))
-
-    implementation(libs.jooq)
-    implementation(libs.flyway.core)
-    implementation(libs.postgresql)
+    implementation(libs.bundles.db)
     implementation(platform(libs.spring.boot.bom))
     implementation(libs.spring.boot.starter)
     implementation(libs.jackson.module.kotlin)
