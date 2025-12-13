@@ -13,7 +13,8 @@ data class Error(
 
         UNKNOWN_APPLICATION_ERROR(Type.INTERNAL, "Nieznany błąd aplikacji"),
         SERVER_ERROR(Type.INTERNAL, "Błąd serwera podczas %s"),
-        DATABASE_ERROR(Type.INTERNAL, "Błąd bazy danych");
+        DATABASE_ERROR(Type.INTERNAL, "Błąd bazy danych"),
+        NUTRIENT_NOT_FOUND(Type.NOT_FOUND, "Nie znaleziono witaminy");
 
         enum class Type() {
             NOT_FOUND,

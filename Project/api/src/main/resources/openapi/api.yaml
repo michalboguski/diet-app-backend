@@ -6,3 +6,6 @@ info:
 paths:
     '/nutrients':
         $ref: 'nutrients.yaml#/paths/~1nutrients'
+
+    '/nutrients/{NutrientId}':
+        $ref: 'nutrients.yaml#/paths/~1nutrients~1{id}'
