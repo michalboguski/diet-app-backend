@@ -1,8 +1,8 @@
 package pl.edu.pjwstk.s25236.diet_app
 
 import org.springframework.stereotype.Component
-import pl.edu.pjwstk.s25236.diet_app.model.Nutrient
-import pl.edu.pjwstk.s25236.diet_app.service.NutrientRepository.CreateNutrientData
+import pl.edu.pjwstk.s25236.diet_app.nutrient.Nutrient
+import pl.edu.pjwstk.s25236.diet_app.nutrient.NutrientRepository.CreateNutrientData
 import pl.edu.pjwstk.s25236.dietgenerator.jooq.tables.records.NutrientRecord
 import pl.edu.pjwstk.s25236.dietgenerator.jooq.tables.references.NUTRIENT
 

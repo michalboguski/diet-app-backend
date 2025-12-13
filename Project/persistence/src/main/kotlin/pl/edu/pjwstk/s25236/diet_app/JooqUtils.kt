@@ -2,7 +2,7 @@ package pl.edu.pjwstk.s25236.diet_app
 
 import io.vavr.control.Either
 import io.vavr.control.Try
-import pl.edu.pjwstk.s25236.diet_app.model.Error
+import pl.edu.pjwstk.s25236.diet_app.common.Error
 
 class JooqUtils {
     companion object {

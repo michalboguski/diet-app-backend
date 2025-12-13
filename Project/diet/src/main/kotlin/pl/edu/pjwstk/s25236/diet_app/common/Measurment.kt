@@ -1,4 +1,4 @@
-package pl.edu.pjwstk.s25236.diet_app.model
+package pl.edu.pjwstk.s25236.diet_app.common
 
 enum class Measurement(val names: List<String>, val value: Double) {
     GRAMS(listOf("g", "gram", "gramów", "gramy"), 1.0),
