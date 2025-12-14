@@ -36,31 +36,53 @@ buildscript {
     }
 }
 
+val dbUrl = providers.gradleProperty("db.url")
+    .orElse(System.getenv("DB_URL") ?: "jdbc:postgresql://localhost:5432/diet_db")
+
+val dbUser = providers.gradleProperty("db.user")
+    .orElse(System.getenv("DB_USER") ?: "diet-generator-agent")
+
+val dbPassword = providers.gradleProperty("db.password")
+    .orElse(System.getenv("DB_PASSWORD") ?: "postgres")
+
+val dbSchema = providers.gradleProperty("db.schema")
+    .orElse("diet_app")
+
 jooq {
     configuration {
         logging = org.jooq.meta.jaxb.Logging.WARN
 
         jdbc {
             driver = "org.postgresql.Driver"
-            url = System.getenv("DB_URL") ?: "jdbc:postgresql://localhost:5432/postgres"
-            user = System.getenv("DB_USER") ?: "postgres"
-            password = System.getenv("DB_PASS") ?: "postgres"
+            url = dbUrl.get()
+            user = dbUser.get()
+            password = dbPassword.get()
         }
 
         generator {
             name = "org.jooq.codegen.KotlinGenerator"
+
             database {
                 name = "org.jooq.meta.postgres.PostgresDatabase"
-                inputSchema = "public"
+                inputSchema = dbSchema.get()
                 includes = ".*"
                 excludes = "flyway_schema_history|pg_.*"
             }
+
             target {
                 packageName = "pl.edu.pjwstk.s25236.dietgenerator.jooq"
                 directory = layout.buildDirectory.dir("generated/jooq").get().asFile.path
             }
         }
     }
+}
+
+flyway {
+    url = dbUrl.get()
+    user = dbUser.get()
+    password = dbPassword.get()
+    schemas = arrayOf(dbSchema.get())
+    locations = arrayOf("filesystem:src/main/resources/db/migration")
 }
 
 sourceSets {
@@ -77,11 +99,4 @@ tasks.named("jooqCodegen") {
 
 tasks.named("compileKotlin") {
     dependsOn(tasks.named("jooqCodegen"))
-}
-
-flyway {
-    url = "jdbc:postgresql://localhost:5432/postgres"
-    user = "postgres"
-    password = "postgres"
-    locations = arrayOf("filesystem:src/main/resources/db/migration")
 }

@@ -1,22 +1,19 @@
-package pl.edu.pjwstk.s25236.diet_app.model
-
-import pl.edu.pjwstk.s25236.diet_app.model.Error.Code.Type.INTERNAL
-import pl.edu.pjwstk.s25236.diet_app.model.Error.Code.UNKNOWN_APPLICATION_ERROR
+package pl.edu.pjwstk.s25236.diet_app.common
 
 data class Error(
-    val code: Code = UNKNOWN_APPLICATION_ERROR,
+    val code: Code = Code.UNKNOWN_APPLICATION_ERROR,
     val message: String
 ) {
 
     public fun isInternal() : Boolean {
-        return INTERNAL == code.type
+        return Code.Type.INTERNAL == code.type
     }
 
     enum class Code(val type: Type, private val messageTemplate: String) {
 
-        UNKNOWN_APPLICATION_ERROR(INTERNAL, "Nieznany błąd aplikacji"),
-        SERVER_ERROR(INTERNAL, "Błąd serwera podczas %s"),
-        DATABASE_ERROR(INTERNAL, "Błąd bazy danych");
+        UNKNOWN_APPLICATION_ERROR(Type.INTERNAL, "Nieznany błąd aplikacji"),
+        SERVER_ERROR(Type.INTERNAL, "Błąd serwera podczas %s"),
+        DATABASE_ERROR(Type.INTERNAL, "Błąd bazy danych");
 
         enum class Type() {
             NOT_FOUND,
