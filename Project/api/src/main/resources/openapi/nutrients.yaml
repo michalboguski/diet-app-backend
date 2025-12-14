@@ -1,30 +1,57 @@
 openapi: 3.0.3
 info:
-  title: api
-  version: 0.1.0
+    title: api
+    version: 0.1.0
 
 paths:
-  /nutrients:
-    get:
-      tags: [nutrients]
-      operationId: listNutrients
-      summary: Lista witamin
-      responses:
-        "200":
-          description: ok
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/NutrientsList' }
+    /nutrients:
+        get:
+            tags: [nutrients]
+            operationId: listNutrients
+            summary: Lista witamin
+            responses:
+                "200":
+                    description: ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/NutrientsList'
+    /nutrients/{id}:
+        get:
+            tags: [nutrients]
+            operationId: retrieveNutrient
+            summary: witamina
+            parameters:
+                -   $ref: '#/components/parameters/Id'
+            responses:
+                "200":
+                    description: ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/NutrientListItem'
+                "404":
+                    description: not found
 
 components:
-  schemas:
-    NutrientsList:
-      type: array
-      items: { $ref: '#/components/schemas/NutrientListItem' }
+    parameters:
+        Id:
+            name: id
+            in: path
+            required: true
+            description: Nutrient identifier
+            schema:
+                type: integer
+                format: int64
 
-    NutrientListItem:
-      type: object
-      required: [id, name]
-      properties:
-        id: {type: integer}
-        name: { type: string }
+    schemas:
+        NutrientsList:
+            type: array
+            items: {$ref: '#/components/schemas/NutrientListItem'}
+
+        NutrientListItem:
+            type: object
+            required: [id, name]
+            properties:
+                id: {type: integer}
+                name: {type: string}
