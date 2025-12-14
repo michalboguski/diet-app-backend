@@ -10,5 +10,5 @@ dependencies {
     implementation(libs.jackson.module.kotlin)
     testImplementation(kotlin("test"))
     implementation(libs.kotlin.reflect)
-    implementation(libs.bundles.vavr)
+    api(libs.bundles.vavr)
 }

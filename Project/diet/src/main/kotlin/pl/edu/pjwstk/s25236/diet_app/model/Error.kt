@@ -1,17 +1,20 @@
 package pl.edu.pjwstk.s25236.diet_app.model
 
 import pl.edu.pjwstk.s25236.diet_app.model.Error.Code.Type.INTERNAL
-import pl.edu.pjwstk.s25236.diet_app.model.Error.Code.Type.MAPPING
-import pl.edu.pjwstk.s25236.diet_app.model.Error.Code.Type.UNEXPECTED
 import pl.edu.pjwstk.s25236.diet_app.model.Error.Code.UNKNOWN_APPLICATION_ERROR
 
 data class Error(
     val code: Code = UNKNOWN_APPLICATION_ERROR,
-    val message: String,
+    val message: String
 ) {
-    enum class Code(private val type: Type, val messageTemplate: String) {
-        UNKNOWN_APPLICATION_ERROR(UNEXPECTED, "Nieznany błąd aplikacji"),
-        MAPPING_RECORD_ERROR(MAPPING, "Błąd podczas mapowania %s"),
+
+    public fun isInternal() : Boolean {
+        return INTERNAL == code.type
+    }
+
+    enum class Code(val type: Type, private val messageTemplate: String) {
+
+        UNKNOWN_APPLICATION_ERROR(INTERNAL, "Nieznany błąd aplikacji"),
         SERVER_ERROR(INTERNAL, "Błąd serwera podczas %s"),
         DATABASE_ERROR(INTERNAL, "Błąd bazy danych");
 
@@ -22,8 +25,6 @@ data class Error(
             TIMEOUT,
             AUTHORIZATION,
             VALIDATION,
-            MAPPING,
-            UNEXPECTED
         }
 
         fun toError(): Error {

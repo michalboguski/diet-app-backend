@@ -1,20 +1,22 @@
 plugins {
     kotlin("jvm")
-    id("org.openapi.generator") version "7.14.0"
+    id("org.openapi.generator") version "7.17.0"
+    alias(libs.plugins.kotlin.noarg)
 }
 
 dependencies {
-    implementation(project(":diet"))
+    api(project(":diet"))
     testImplementation(kotlin("test"))
-
     implementation(platform(libs.spring.boot.bom))
-    implementation(libs.spring.web)
+    implementation(libs.spring.boot.starter.web)
+    implementation(libs.spring.boot.starter.validation)
     implementation(libs.spring.context)
     implementation(libs.swagger.models)
     implementation(libs.jakarta.annotation)
     implementation(libs.jakarta.validation)
     implementation(libs.jakarta.servlet)
     compileOnly(libs.swagger.annotations)
+    implementation(libs.modelmapper)
 }
 
 openApiGenerate {
@@ -24,20 +26,27 @@ openApiGenerate {
     apiPackage.set("pl.edu.pjwstk.s25236.diet_app.generated.api")
     modelPackage.set("pl.edu.pjwstk.s25236.diet_app.generated.model")
 
-    additionalProperties.set(
-        mapOf(
-            "modelNameSuffix" to "Dto",
-            "interfaceOnly" to "true",
-            "apiVisibility" to "public",
-            "useTags" to "true",
-        )
-    )
-
     configOptions.set(
         mapOf(
             "useSpringBoot3" to "true",
+            "interfaceOnly" to "true",
+            "useTags" to "true",
+            "skipDefaultInterface" to "true",
             "dateLibrary" to "java21",
-            "serializationLibrary" to "jackson"
+            "serializationLibrary" to "jackson",
+            "generateSupportingFiles" to "false",
+            "basePackage" to "pl.edu.pjwstk.s25236.diet_app.generated",
+            "apiVisibility" to "public",
+            "additionalModelTypeAnnotations" to "@pl.edu.pjwstk.s25236.diet_app.NoArg",
+            "modelMutable" to "true"
+        )
+    )
+
+    additionalProperties.set(
+        mapOf(
+            "modelNameSuffix" to "Dto",
+            "generatedAnnotation" to "true",
+            "generateMetadata" to "true"
         )
     )
 }
@@ -50,18 +59,9 @@ kotlin {
     }
 }
 
-//tasks.openApiGenerate {
-//    doLast {
-//        val springDocConfig = layout.buildDirectory
-//            .dir("generated/openapi/src/main/kotlin/org/openapitools")
-//            .get()
-//            .file("SpringDocConfiguration.kt")
-//            .asFile
-//        if (springDocConfig.exists()) {
-//            springDocConfig.delete()
-//        }
-//    }
-//}
+noArg {
+    annotation("pl.edu.pjwstk.s25236.diet_app.NoArg")
+}
 
 tasks.compileKotlin {
     dependsOn(tasks.openApiGenerate)

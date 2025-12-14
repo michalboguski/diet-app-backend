@@ -12,11 +12,10 @@ dependencies {
     implementation(project(":scraper"))
     implementation(project(":translate"))
 
-    implementation(libs.spring.boot.starter.web )
+    implementation(libs.spring.boot.starter.web)
     implementation(libs.jackson.module.kotlin)
     implementation(libs.kotlin.reflect)
     implementation(libs.kotlin.logging.jvm)
-    implementation(libs.modelmapper)
     implementation(libs.bundles.vavr)
     implementation(libs.springdoc.openapi.ui)
     testImplementation(libs.spring.boot.starter.test)

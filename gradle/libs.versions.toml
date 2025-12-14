@@ -12,6 +12,7 @@ junit = "5.10.2"
 mockk = "1.13.12"
 testcontainers = "1.20.2"
 kotlin-logging = "3.0.5"
+kotlin-noarg = { id = "org.jetbrains.kotlin.plugin.noarg", version.ref = "kotlin" }
 modelmapper = "3.2.0"
 vavr = "0.10.2"
 spock = "2.3-groovy-4.0"
@@ -25,6 +26,7 @@ spring-boot-starter-validation = { group = "org.springframework.boot", name = "s
 spring-boot-starter-data-jpa = { group = "org.springframework.boot", name = "spring-boot-starter-data-jpa" }
 spring-boot-starter-actuator = { group = "org.springframework.boot", name = "spring-boot-starter-actuator" }
 spring-boot-starter-test =   { group = "org.springframework.boot", name = "spring-boot-starter-test" }
+spring-boot-starter-jooq = { group = "org.springframework.boot", name = "spring-boot-starter-jooq", version.ref = "spring-boot" }
 spring-web = { group = "org.springframework", name = "spring-web" }
 spring-context = { group = "org.springframework", name = "spring-context" }
 swagger-models = { group = "io.swagger.core.v3", name = "swagger-models", version.ref = "swagger" }
@@ -32,6 +34,7 @@ swagger-annotations = { group = "io.swagger.core.v3", name = "swagger-annotation
 jakarta-annotation = { group = "jakarta.annotation", name = "jakarta.annotation-api", version = "3.0.0" }
 jakarta-validation = { group = "jakarta.validation", name = "jakarta.validation-api", version = "3.1.0" }
 jakarta-servlet = { group = "jakarta.servlet", name = "jakarta.servlet-api", version = "6.0.0" }
+
 
 kotlin-reflect = { group = "org.jetbrains.kotlin", name = "kotlin-reflect", version.ref = "kotlin" }
 jackson-module-kotlin = { group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin", version.ref = "jackson" }
@@ -77,12 +80,14 @@ test = [
     "spock-spring",
     "junit-platform-launcher"
 ]
-db = [ "postgresql", "flyway-core", "jooq" ]
+db = [ "postgresql", "flyway-core", "jooq", "spring-boot-starter-jooq" ]
 vavr = [ "vavr", "vavr-kotlin", "vavr-jackson" ]
 spock = [ "spock-core", "spock-spring" ]
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
+kotlin-noarg = { id = "org.jetbrains.kotlin.plugin.noarg", version.ref = "kotlin" }
 spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
 spring-dependency-management = { id = "io.spring.dependency-management", version.ref = "spring-dependency-management" }
 jooq = { id = "org.jooq.jooq-codegen-gradle", version.ref = "jooq" }
