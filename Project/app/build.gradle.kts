@@ -13,6 +13,7 @@ dependencies {
     implementation(project(":translate"))
 
     implementation(libs.spring.boot.starter.web)
+    implementation(libs.spring.boot.starter.data.jpa)
     implementation(libs.jackson.module.kotlin)
     implementation(libs.kotlin.reflect)
     implementation(libs.kotlin.logging.jvm)
