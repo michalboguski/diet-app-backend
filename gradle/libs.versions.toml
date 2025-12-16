@@ -20,12 +20,12 @@ junit-platform = "1.10.2"
 
 [libraries]
 spring-boot-bom = { group = "org.springframework.boot", name = "spring-boot-dependencies", version.ref = "spring-boot" }
-spring-boot-starter =        { group = "org.springframework.boot", name = "spring-boot-starter" }
-spring-boot-starter-web =    { group = "org.springframework.boot", name = "spring-boot-starter-web" }
+spring-boot-starter = { group = "org.springframework.boot", name = "spring-boot-starter" }
+spring-boot-starter-web = { group = "org.springframework.boot", name = "spring-boot-starter-web" }
 spring-boot-starter-validation = { group = "org.springframework.boot", name = "spring-boot-starter-validation" }
 spring-boot-starter-data-jpa = { group = "org.springframework.boot", name = "spring-boot-starter-data-jpa" }
 spring-boot-starter-actuator = { group = "org.springframework.boot", name = "spring-boot-starter-actuator" }
-spring-boot-starter-test =   { group = "org.springframework.boot", name = "spring-boot-starter-test" }
+spring-boot-starter-test = { group = "org.springframework.boot", name = "spring-boot-starter-test" }
 spring-boot-starter-jooq = { group = "org.springframework.boot", name = "spring-boot-starter-jooq", version.ref = "spring-boot" }
 spring-web = { group = "org.springframework", name = "spring-web" }
 spring-context = { group = "org.springframework", name = "spring-context" }
@@ -80,9 +80,9 @@ test = [
     "spock-spring",
     "junit-platform-launcher"
 ]
-db = [ "postgresql", "flyway-core", "jooq", "spring-boot-starter-jooq" ]
-vavr = [ "vavr", "vavr-kotlin", "vavr-jackson" ]
-spock = [ "spock-core", "spock-spring" ]
+db = ["postgresql", "flyway-core", "jooq", "spring-boot-starter-jooq"]
+vavr = ["vavr", "vavr-kotlin", "vavr-jackson"]
+spock = ["spock-core", "spock-spring"]
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
@@ -91,4 +91,4 @@ kotlin-noarg = { id = "org.jetbrains.kotlin.plugin.noarg", version.ref = "kotlin
 spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
 spring-dependency-management = { id = "io.spring.dependency-management", version.ref = "spring-dependency-management" }
 jooq = { id = "org.jooq.jooq-codegen-gradle", version.ref = "jooq" }
-flyway = {id = "org.flywaydb.flyway", version.ref = "flyway"}
+flyway = { id = "org.flywaydb.flyway", version.ref = "flyway" }
