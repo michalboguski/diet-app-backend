@@ -22,9 +22,14 @@ dependencies {
 openApiGenerate {
     generatorName.set("kotlin-spring")
     inputSpec.set("$projectDir/src/main/resources/openapi/api.yaml")
-    outputDir.set(layout.buildDirectory.dir("generated/openapi").get().asFile.path)
-    apiPackage.set("pl.edu.pjwstk.s25236.diet_app.generated.api")
-    modelPackage.set("pl.edu.pjwstk.s25236.diet_app.generated.model")
+    outputDir.set(
+        layout.buildDirectory
+            .dir("generated/openapi")
+            .get()
+            .asFile.path,
+    )
+    apiPackage.set("pl.edu.pjwstk.s25236.dietapp.generated.api")
+    modelPackage.set("pl.edu.pjwstk.s25236.dietapp.generated.model")
 
     configOptions.set(
         mapOf(
@@ -35,19 +40,19 @@ openApiGenerate {
             "dateLibrary" to "java21",
             "serializationLibrary" to "jackson",
             "generateSupportingFiles" to "false",
-            "basePackage" to "pl.edu.pjwstk.s25236.diet_app.generated",
+            "basePackage" to "pl.edu.pjwstk.s25236.dietapp.generated",
             "apiVisibility" to "public",
-            "additionalModelTypeAnnotations" to "@pl.edu.pjwstk.s25236.diet_app.NoArg",
-            "modelMutable" to "true"
-        )
+            "additionalModelTypeAnnotations" to "@pl.edu.pjwstk.s25236.dietapp.NoArg",
+            "modelMutable" to "true",
+        ),
     )
 
     additionalProperties.set(
         mapOf(
             "modelNameSuffix" to "Dto",
             "generatedAnnotation" to "true",
-            "generateMetadata" to "true"
-        )
+            "generateMetadata" to "true",
+        ),
     )
 }
 
@@ -60,7 +65,7 @@ kotlin {
 }
 
 noArg {
-    annotation("pl.edu.pjwstk.s25236.diet_app.NoArg")
+    annotation("pl.edu.pjwstk.s25236.dietapp.NoArg")
 }
 
 tasks.compileKotlin {

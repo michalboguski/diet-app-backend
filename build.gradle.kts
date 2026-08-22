@@ -6,7 +6,7 @@ plugins {
     alias(libs.plugins.kotlin.spring) apply false
 }
 
-group = "pl.edu.pjwstk.s25236.diet_app"
+group = "pl.edu.pjwstk.s25236.dietapp"
 version = "0.0.1-SNAPSHOT"
 description = "diet-app-backend"
 

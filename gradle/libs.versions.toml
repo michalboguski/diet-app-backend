@@ -7,7 +7,7 @@ swagger = "2.2.23"
 jooq = "3.20.0"
 flyway = "11.2.0"
 postgres = "42.7.4"
-jackson = "2.17.2"
+jackson = "2.15.4"
 junit = "5.10.2"
 mockk = "1.13.12"
 testcontainers = "1.20.2"
@@ -17,6 +17,12 @@ modelmapper = "3.2.0"
 vavr = "0.10.2"
 spock = "2.3-groovy-4.0"
 junit-platform = "1.10.2"
+playwright = "1.52.0"
+okhttp = "4.12.0"
+deepl = "1.10.0"
+coroutines = "1.7.3"
+hikari = "5.1.0"
+apache-poi = "5.3.0"
 
 [libraries]
 spring-boot-bom = { group = "org.springframework.boot", name = "spring-boot-dependencies", version.ref = "spring-boot" }
@@ -34,10 +40,16 @@ swagger-annotations = { group = "io.swagger.core.v3", name = "swagger-annotation
 jakarta-annotation = { group = "jakarta.annotation", name = "jakarta.annotation-api", version = "3.0.0" }
 jakarta-validation = { group = "jakarta.validation", name = "jakarta.validation-api", version = "3.1.0" }
 jakarta-servlet = { group = "jakarta.servlet", name = "jakarta.servlet-api", version = "6.0.0" }
-
-
+playwright = { module = "com.microsoft.playwright:playwright", version.ref = "playwright" }
+okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+deepl = { module = "com.deepl.api:deepl-java", version.ref = "deepl" }
+coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+jackson-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jackson" }
+jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind" , version.ref = "jackson"}
+apache-poi = { module = "org.apache.poi:poi-ooxml", version.ref = "apache-poi"}
 kotlin-reflect = { group = "org.jetbrains.kotlin", name = "kotlin-reflect", version.ref = "kotlin" }
 jackson-module-kotlin = { group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin", version.ref = "jackson" }
+hikari = { module = "com.zaxxer:HikariCP", version.ref = "hikari" }
 postgresql = { group = "org.postgresql", name = "postgresql", version.ref = "postgres" }
 flyway-database-postgresql = { group = "org.flywaydb", name = "flyway-database-postgresql", version.ref = "flyway" }
 flyway-core = { group = "org.flywaydb", name = "flyway-core", version.ref = "flyway" }

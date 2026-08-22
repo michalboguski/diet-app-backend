@@ -36,17 +36,25 @@ buildscript {
     }
 }
 
-val dbUrl = providers.gradleProperty("db.url")
-    .orElse(System.getenv("DB_URL") ?: "jdbc:postgresql://localhost:5432/diet_db")
+val dbUrl =
+    providers
+        .gradleProperty("db.url")
+        .orElse(System.getenv("DB_URL") ?: "jdbc:postgresql://146.59.95.136:5432/diet_db")
 
-val dbUser = providers.gradleProperty("db.user")
-    .orElse(System.getenv("DB_USER") ?: "diet-generator-agent")
+val dbUser =
+    providers
+        .gradleProperty("db.user")
+        .orElse(System.getenv("DB_USER") ?: "diet-generator-agent")
 
-val dbPassword = providers.gradleProperty("db.password")
-    .orElse(System.getenv("DB_PASSWORD") ?: "postgres")
+val dbPassword =
+    providers
+        .gradleProperty("db.password")
+        .orElse(System.getenv("DB_PASSWORD") ?: "postgres")
 
-val dbSchema = providers.gradleProperty("db.schema")
-    .orElse("diet_app")
+val dbSchema =
+    providers
+        .gradleProperty("db.schema")
+        .orElse("diet_app")
 
 jooq {
     configuration {
@@ -67,11 +75,21 @@ jooq {
                 inputSchema = dbSchema.get()
                 includes = ".*"
                 excludes = "flyway_schema_history|pg_.*"
+                forcedTypes.add(
+                    org.jooq.meta.jaxb.ForcedType().apply {
+                        name = "JSONB"
+                        includeExpression = "recipe\\.steps"
+                    },
+                )
             }
 
             target {
                 packageName = "pl.edu.pjwstk.s25236.dietgenerator.jooq"
-                directory = layout.buildDirectory.dir("generated/jooq").get().asFile.path
+                directory =
+                    layout.buildDirectory
+                        .dir("generated/jooq")
+                        .get()
+                        .asFile.path
             }
         }
     }
@@ -88,7 +106,6 @@ flyway {
 sourceSets {
     named("main") {
         kotlin.srcDir(layout.buildDirectory.dir("generated/jooq"))
-
     }
 }
 
