@@ -26,7 +26,7 @@ dependencies {
 }
 
 springBoot {
-    mainClass.set("pl.edu.pjwstk.s25236.diet_app.DietAppBackendKt")
+    mainClass.set("pl.edu.pjwstk.s25236.dietapp.DietAppBackendKt")
 }
 
 

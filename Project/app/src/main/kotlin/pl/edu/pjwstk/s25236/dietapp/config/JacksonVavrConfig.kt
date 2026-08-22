@@ -1,6 +1,7 @@
 package pl.edu.pjwstk.s25236.dietapp.config
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import io.vavr.jackson.datatype.VavrModule
 import org.springframework.context.annotation.Bean
@@ -13,4 +14,5 @@ open class JacksonVavrConfig {
         ObjectMapper()
             .registerKotlinModule()
             .registerModule(VavrModule())
+            .registerModule(JavaTimeModule())
 }
