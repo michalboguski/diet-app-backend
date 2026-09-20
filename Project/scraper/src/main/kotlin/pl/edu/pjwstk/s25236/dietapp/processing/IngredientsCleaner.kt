@@ -21,8 +21,11 @@ class RecipeCleaner {
     fun clean(rawLines: List<String>): List<String> =
         splitLinesOnPlus(rawLines)
             .asSequence()
+            .filter { !it.contains(Regex("^\\s*\\*")) }
             .map { it.removeLeadingDash() }
             .map { it.removeWhitespace() }
+            .map { it.deleteContentAfterDash() }
+            .map { it.removeAsterisk() }
             .map { it.normalizeTypography() }
             .map { it.replace("ml.", "ml") }
             .map { it.normalizeCommas() }
@@ -32,6 +35,15 @@ class RecipeCleaner {
             .filter { it.isNotBlank() }
             .filter { it.shouldReject(banned) }
             .toList()
+
+    fun String.deleteContentAfterDash(): String {
+        return this.split(" - ").first().trim()
+    }
+
+    fun String.removeAsterisk(): String {
+        return this.replace(Regex("(?<=\\S)\\*(?=\\s|$)"), "")
+    }
+
 
     private fun splitLinesOnPlus(lines: List<String>): List<String> =
         lines.flatMap { line ->
@@ -73,6 +85,7 @@ fun String.normalizeTypography(): String =
         .replace(Regex("(\\d)½"), "$1.5")
         .replace(Regex("(\\d)¼"), "$1.25")
         .replace(Regex("(\\d)¾"), "$1.75")
+        .replace("pół", "0.5")
         .replace("1/2", "0.5")
         .replace("1/3", "0.34")
         .replace("1/4", "0.25")

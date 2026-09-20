@@ -12,18 +12,29 @@ class IngredientTranslator {
         options.modelType = "prefer_literal"
         options.formality = Formality.PreferLess
         options.setPreserveFormatting(true)
-        options.context = "Translate the following food ingredient name literally.\n" +
-            "Preserve the exact noun–adjective structure.\n" +
-            "Do NOT generalize, simplify, or merge meanings.\n" +
-            "If the phrase contains qualifiers (e.g. canned, with skin, white, yolk),\n" +
-            "Whole can be skip.\n" +
-            "they MUST be preserved in the translation.\n" +
-            "Return only the translated phrase. Examples:\n" +
-            "\"jajko\" -> \"whole egg\"\n" +
-            "\"białko jaja\" -> \"egg white\"\n" +
-            "\"żółtko jaja\" -> \"egg yolk\"\n" +
-            "\"filet z kurczaka ze skórą\" -> \"chicken breast with skin\"\n" +
-            "\"fasola puszkowana\" -> \"canned beans\""
+        options.context = """
+        The input is an English FOOD INGREDIENT name from a nutritional database.
+
+        Translate it into Polish using the culinary/food meaning only.
+
+        Do not interpret words using non-food meanings.
+        Preserve all meaningful qualifiers such as:
+        canned, dried, fresh, frozen, smoked, skinless, with skin,
+        low-fat, lactose-free, pasteurised, cooked, raw.
+
+        Do not generalize or simplify the ingredient.
+
+        Examples:
+        "rocket" -> "rukola"
+        "witch" -> "flądra"
+        "egg white" -> "białko jaja"
+        "egg yolk" -> "żółtko jaja"
+        "chicken breast with skin" -> "pierś z kurczaka ze skórą"
+        "canned beans" -> "fasola konserwowa"
+        "whole milk" -> "mleko pełnotłuste"
+
+        Return only the Polish ingredient name.
+    """.trimIndent()
         return deeplClient.translateText(text, "en", "pl", options).text
     }
 }

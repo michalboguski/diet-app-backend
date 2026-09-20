@@ -15,6 +15,18 @@ class ScraperRepository(
     private val context: DSLContext =
         DSL.using(dataSource, SQLDialect.POSTGRES)
 
+    fun checkFoodIsPresent(nameEn: String): Boolean {
+        return context.transactionResult { configuration ->
+            val transaction = DSL.using(configuration)
+            transaction.fetchExists(
+                transaction
+                    .selectOne()
+                    .from(INGREDIENT)
+                    .where(INGREDIENT.NAME_EN.eq(nameEn))
+            )
+        }
+    }
+
     fun importFood(
         food: BlsIngredientDto,
         translate: String,
@@ -107,8 +119,14 @@ class ScraperRepository(
                 .set(INGREDIENT.FIBRE_HIGH_MOLECULAR_WEIGHT, food.fibreHighMolecularWeight)
                 .set(INGREDIENT.FIBRE_WATER_INSOLUBLE, food.fibreWaterInsoluble)
                 .set(INGREDIENT.FIBRE_WATER_SOLUBLE, food.fibreWaterSoluble)
-                .set(INGREDIENT.FIBRE_HIGH_MOLECULAR_WEIGHT_WATER_SOLUBLE, food.fibreHighMolecularWeightWaterSoluble)
-                .set(INGREDIENT.FIBRE_HIGH_MOLECULAR_WEIGHT_WATER_INSOLUBLE, food.fibreHighMolecularWeightWaterInsoluble)
+                .set(
+                    INGREDIENT.FIBRE_HIGH_MOLECULAR_WEIGHT_WATER_SOLUBLE,
+                    food.fibreHighMolecularWeightWaterSoluble
+                )
+                .set(
+                    INGREDIENT.FIBRE_HIGH_MOLECULAR_WEIGHT_WATER_INSOLUBLE,
+                    food.fibreHighMolecularWeightWaterInsoluble
+                )
                 .set(INGREDIENT.FATTY_ACIDS_SATURATED_TOTAL, food.fattyAcidsSaturatedTotal)
                 .set(INGREDIENT.FATTY_ACID_C4_0, food.fattyAcidC40)
                 .set(INGREDIENT.FATTY_ACID_C6_0, food.fattyAcidC60)
@@ -277,3 +295,4 @@ class ScraperRepository(
 //            recipeId
 //        }
 }
+
