@@ -15,7 +15,7 @@ fun main() {
 //
     val procesor = RecipeProcessor()
     val list = mutableListOf<Double>()
-    readAllRawRecipes(Path.of("saved-recipes"))[3]
+    readAllRawRecipes(Path.of("saved-recipes"))[0]
         .let { recipe ->
         val rawRecipe =
             RawRecipe(
