@@ -1,7 +1,6 @@
 package pl.edu.pjwstk.s25236.dietapp.utils
 
 import kotlinx.coroutines.runBlocking
-import pl.edu.pjwstk.s25236.dietapp.bls.ObjectMappers
 import pl.edu.pjwstk.s25236.dietapp.processing.IngredientLineParser
 import pl.edu.pjwstk.s25236.dietapp.processing.IngredientNameNormalizer
 import pl.edu.pjwstk.s25236.dietapp.processing.RecipeCleaner
@@ -47,7 +46,7 @@ object ScraperUtils {
             parsedIngredientLines.forEachIndexed { i, data ->
                 val line = if (i < cleanIngredientLines.size) cleanIngredientLines[i] else "BRAK"
                 val candidates = data.candidates
-                println("$line | ${data.amount} ${data.unitName} : $candidates")
+                println("$line | ${data.amount} ${data.measurement.names.first()} : $candidates")
             }
 
             println("=====")

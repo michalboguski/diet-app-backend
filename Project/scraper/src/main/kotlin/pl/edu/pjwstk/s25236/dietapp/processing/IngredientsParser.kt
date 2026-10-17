@@ -1,5 +1,7 @@
 package pl.edu.pjwstk.s25236.dietapp.processing
 
+import pl.edu.pjwstk.s25236.dietapp.common.Measurement
+
 class IngredientLineParser {
     val ignoredTokens =
         listOf(
@@ -17,25 +19,30 @@ class IngredientLineParser {
         )
 
     fun parse(ingredientLines: List<String>): List<ParsedIngredient> {
-        val ingredients = mutableListOf<ParsedIngredient>()
-        for (line in ingredientLines) {
-            val amountToken = extractAmount(line)
-            val unitToken = extractUnitToken(line, amountToken.second ?: 0)
-            val candidates =
-                extractIngredientCandidates(
-                    line = line,
-                    unitName = unitToken.first,
-                    index = unitToken.second,
-                )
-            ingredients.add(
-                ParsedIngredient(
-                    amount = amountToken.first ?: 1.0,
-                    unitName = unitToken.first,
-                    candidates = candidates,
-                ),
+        return ingredientLines
+            .map { splitNumberAndUnit(it) }
+            .map { parseLine(it.split(" ")) }
+            .toList()
+    }
+
+    fun parseLine(line: List<String>): ParsedIngredient {
+        val words = ignoreTokens(line)
+        val unit = extractUnitToken(words)
+        val amount = extractAmount(words, unit.second)
+        val candidates =
+            extractIngredientCandidates(
+                words = words,
+                indexed = amount.second.toSet() + unit.let {
+                    if (it.first in Measurement.measurementsAsIngredients) return@let -1
+                    else return@let it.second
+                }
             )
-        }
-        return ingredients
+        println(words.joinToString(" ") + " | " + amount.second.toSet() + unit.second)
+        return ParsedIngredient(
+            amount = amount.first,
+            measurement = unit.first,
+            candidates = candidates,
+        )
     }
 
     private val fractionPattern =
@@ -55,86 +62,69 @@ class IngredientLineParser {
             .map { it.value }
             .toList()
 
-    fun extractAmount(line: String): Pair<Double?, Int?> {
-        val separated = splitNumberAndUnit(line)
-        val tokens = extractNumberTokens(separated)
-        return when (tokens.size) {
-            0 -> 0.0 to 0
-            1 -> tokens.first().toDouble() to line.lastIndexOf(tokens[0])
-            2 -> parseTwoTokens(line, tokens)
-            3 -> parseThreeTokens(line, tokens)
-            4 -> parseFourTokens(line, tokens)
-            else -> parseMultipleTokens(tokens)
+    fun extractAmount(words: List<String>, index: Int): Pair<Double, List<Int>> {
+        return when (index) {
+            -1 -> 0.0 to listOf(-1)
+            0 -> 1.0 to listOf(0)
+            else -> parseMeasurementAtIndex(words, index)
         }
     }
 
-    fun extractUnitToken(
-        line: String,
-        index: Int,
-    ): Pair<String, Int> {
-        var start = index + 1
-        while (start < line.length && !line[start].isLetter()) start++
-        var end = start
-        while (end < line.length && line[end].isLetter()) end++
-        return line.substring(start, end) to end
+    fun extractUnitToken(words: List<String>): Pair<Measurement, Int> {
+        words.forEachIndexed { index, word ->
+            val m = Measurement.fromText(word)
+            if (m != Measurement.UNKNOWN) {
+                return m to index
+            }
+        }
+
+        return Measurement.UNKNOWN to -1
     }
 
     fun extractIngredientCandidates(
-        line: String,
-        unitName: String,
-        index: Int,
+        words: List<String>,
+        indexed: Set<Int>,
     ): String {
-        val cutLine = line.substring(index).trim()
-        val tokens = cutLine.split(" ").filter { it.isNotBlank() }
-        return when (tokens.size) {
-            0 -> unitName
-            1 -> tokens.joinToString(separator = " ")
-            else -> ignoreTokens(tokens).joinToString(separator = " ")
-        }
+        return words.filterIndexed { index, _ -> index !in indexed }.joinToString(" ")
     }
 
     fun ignoreTokens(tokens: List<String>): List<String> = tokens.filter { !ignoredTokens.contains(it) }.toList()
 
-    fun parseTwoTokens(
-        line: String,
-        tokens: List<String>,
-    ): Pair<Double?, Int?> {
-        val first = tokens[0]
-        val second = tokens[1]
-        return when {
-            line.contains("-") -> {
-                (first.toDouble() + second.toDouble()) / 2 to line.lastIndexOf(second)
-            }
-
-            fractionPattern.containsMatchIn(line) -> {
-                first.toDouble() / second.toDouble() to line.lastIndexOf(second)
-            }
-
-            line.contains(" i ") && second.contains(".") -> {
-                first.toDouble() + second.toDouble() to line.lastIndexOf(second)
-            }
-
-            else -> {
-                first.toDouble() to line.lastIndexOf(first)
-            }
+    fun parseMeasurementAtIndex(
+        words: List<String>,
+        index: Int
+    ): Pair<Double, List<Int>> {
+        val amountMatches = words.filter { regex.matches(it) }
+        return when (amountMatches.size) {
+            0 -> 1.0 to listOf(-1)
+            1 -> parseOneToken(words, index,words.indexOf(amountMatches[0]))
+            2 -> parseTwoTokens(words, index, words.indexOf(amountMatches[0]), words.indexOf(amountMatches[1]))
+            else -> 1.0 to listOf(-1) // to sprawdzić - zrobione na szybko
         }
     }
 
-    fun parseThreeTokens(
-        line: String,
-        tokens: List<String>,
-    ): Pair<Double?, Int?> = tokens[0].toDouble() to 1
-
-    fun parseFourTokens(
-        line: String,
-        tokens: List<String>,
-    ): Pair<Double?, Int?> = 4444.4444 to 1
-
-    fun parseMultipleTokens(tokens: List<String>): Pair<Double?, Int?> = tokens[0].toDouble() to 1
+    fun parseOneToken(words: List<String>, mIndex: Int, index1: Int): Pair<Double, List<Int>> {
+        return words[index1].toDouble() to listOf(index1)
+    }
 }
+    fun parseTwoTokens(words: List<String>, mIndex: Int, index1: Int, index2: Int): Pair<Double, List<Int>> {
+        return when (index2 - index1) {
+            1 -> words[index1].toDouble() + words[index2].toDouble() to listOf(index1, index2)
+            2 -> {
+                val operator = words[index2-1].trim()
+                when (operator) {
+                    "-" -> words[index1].toDouble()*0.5 + words[index2].toDouble()*0.5 to listOf(index1, index2)
+                    "i" -> words[index1].toDouble() + words[index2].toDouble() to listOf(index1, index2)
+                    "/" -> words[index1].toDouble() / words[index2].toDouble() to listOf(index1, index2)
+                    else -> words[index1].toDouble() to listOf(index1, index2)
+                }
+            }
+            else -> words[index1].toDouble() to listOf(index1, index2)
+        }
+    }
 
-data class ParsedIngredient(
-    val amount: Double,
-    val unitName: String,
-    val candidates: String,
-)
+    data class ParsedIngredient(
+        val amount: Double,
+        val measurement: Measurement,
+        val candidates: String,
+    )
