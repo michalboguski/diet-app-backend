@@ -13,82 +13,96 @@ class IngredientImporter {
     val repo = ScraperRepository(dataSource)
     val translator = IngredientTranslator()
     val normalizer = IngredientNameNormalizer()
-    val allowed = setOf("raw", "flour", "type")
-    val banned =
-        setOf(
-            "frozen",
-            "boiled",
-            "braised",
-            "fried",
-            "deep-fried",
-            "grilled",
-            "poached",
-            "stewed",
-            "cured",
-            "boiling",
-            "goulash",
-            "cold",
-            "cola",
-            "mix",
-            "with",
-            "cooked",
-            "danish",
-            "mixed",
-            "soup",
-            "cake",
-            "cocktail",
-            "infusion",
-            "substitute",
-            "common",
-            "pasta",
-            "vegetarian",
-            "venison",
-            "vienna",
-            "wine",
-            "cocktail",
-            "mix/fruit",
-            "salad",
-            "drink",
-            "mix",
-            "viennese",
-            "beer",
-            "chocolate",
-            "zervelatwurst",
-            "vegetables",
-            "instant",
-            "vegetable",
-            "ice",
-            "juice",
-            "-",
-            "sweetened",
-            "with vegetables",
-            "deep-frozen",
-            "fortified with vitamins",
-            "fried",
-            "with herbs",
-            "fortified",
-            "drink",
-            "compote",
-            "biscuits",
-            "herb",
-            "herbal",
-            "sauce",
-            "toasted"
-        )
+    val allowed = setOf("raw", "flour", "type", "milk", "%", "pudding")
+    val banned = setOf(
+        "cheese",
+        "cream",
+        "strawberry-cream",
+        "substitute",
+        "frozen",
+        "boiled",
+        "braised",
+        "fried",
+        "deep-fried",
+        "grilled",
+        "poached",
+        "stewed",
+        "cured",
+        "boiling",
+        "goulash",
+        "cold",
+        "cola",
+        "mix",
+        "with",
+        "cooked",
+        "danish",
+        "mixed",
+        "soup",
+        "cake",
+        "cocktail",
+        "infusion",
+        "substitute",
+        "common",
+        "pasta",
+        "vegetarian",
+        "venison",
+        "vienna",
+        "wine",
+        "cocktail",
+        "mix/fruit",
+        "salad",
+        "drink",
+        "mix",
+        "viennese",
+        "beer",
+        "zervelatwurst",
+        "vegetables",
+        "instant",
+        "vegetable",
+        "ice",
+        "juice",
+        "-",
+        "sweetened",
+        "with vegetables",
+        "deep-frozen",
+        "fortified with vitamins",
+        "fried",
+        "with herbs",
+        "fortified",
+        "drink",
+        "compote",
+        "biscuits",
+        "herb",
+        "herbal",
+        "sauce",
+        "toasted",
+        "cookies",
+        "macaroons",
+        "decorations",
+        "torte",
+        "muffins",
+        "soup",
+        "filled",
+        "filling"
+    )
 
-    /*
+    fun processByNameEn(name: String) {
+        val allIngredients = readXlsx("bls.xlsx")
 
-    todo
-    // zwraca samą angielską nazwę
-    fun getNameEnLine(ingredientDto: BlsIngredientDto) : String {
 
+        // transform names
+        val ingredient = allIngredients.first { it.nameEn == name }
+        val transformedIngredient =
+            ingredient.copy(
+                nameEn = transformName(ingredient.nameEn)
+            )
+        //save
+        if (repo.checkFoodIsPresent(transformedIngredient.nameEn)) {
+            println("jest w bazie: ${transformedIngredient.nameEn}")
+            return
+        }
+        saveIngredient(ingredient)
     }
-
-    // modyfikuje linie z nazwą
-    fun modifyNameEnLine(nameEnLine: String) : String {
-
-    }
-    */
 
     fun process() {
 
@@ -96,32 +110,46 @@ class IngredientImporter {
         val allIngredients = readXlsx("bls.xlsx")
 
         // reduce()
-        val afterFilter =
-            allIngredients.filter { ingredient ->
-                banned.none { banned ->
-                    ingredient.nameEn.contains(banned, ignoreCase = true)
-                }
-                        || allowed.any { allow ->
-                    ingredient.nameEn.contains(allow, ignoreCase = true)
-                }
-            }.toList()
+        val afterFilter = allIngredients.filter { ingredient ->
+            val name = ingredient.nameEn
+
+            val isBanned = banned.any {
+                name.containsWord(it)
+            }
+
+            val isAllowed = allowed.any {
+                name.containsWord(it)
+            }
+
+            !isBanned || isAllowed
+        }.toList()
 
 
         // transform names
-        val transformedIngredients =
-            afterFilter.map { ingredient ->
+        val transformedIngredients = afterFilter.asSequence().sortedBy { it.nameEn.length }.take(2000)
+            .map { ingredient ->
                 ingredient.copy(
                     nameEn = transformName(ingredient.nameEn)
                 )
-            }
-                .toList()
-                .sortedBy { it.nameEn.length }
-                .dropLast(50)
+            }.toList().sortedBy { it.nameEn.length }.toList()
 
-        // translateToPL
+        afterFilter.sortedBy { it.nameEn.length }.forEachIndexed { index, dto -> println("$index | ${dto.nameEn}") }
+
+        val rest = allIngredients - afterFilter.toHashSet()
+        rest.sortedBy { it.nameEn.length }.forEachIndexed { index, dto -> println("$index : ${dto.nameEn}") }
 
 
-        // save()
+        banned.forEach { banned ->
+            println(
+                "$banned filter: ${count(banned, afterFilter.map { it.nameEn })} | rest: ${
+                    count(
+                        banned,
+                        rest.map { it.nameEn })
+                } "
+            )
+        }
+
+        // save
         transformedIngredients
             .forEachIndexed { index, dto ->
                 println("transformedIngredient: $index")
@@ -129,19 +157,19 @@ class IngredientImporter {
                     println("jest w bazie: ${dto.nameEn}")
                     return@forEachIndexed
                 }
-                saveIngredient(dto) }
+                saveIngredient(dto)
+            }
     }
 
+    fun count(str: String, list: List<String>): Int =
+        list.count { it.contains(str, ignoreCase = true) }
+
     fun transformName(name: String): String {
-        return name
-            .replace(Regex("""\([^)]*\)|\[[^]]*]|\{[^}]*}"""), "")
+        return name.replace(Regex("""\([^)]*\)|\[[^]]*]|\{[^}]*}"""), "")
             .replace(Regex("""\bfat\s+in\s+dry\s+matter\b""", RegexOption.IGNORE_CASE), "")
             .replace(Regex("""\braw\b""", RegexOption.IGNORE_CASE), "")
             .replace(Regex("""\b(?:min|max)\.""", RegexOption.IGNORE_CASE), "")
-            .replace(Regex("""([^\s,]+)/[^\s,]+"""), "$1")
-            .replace(",", "")
-            .replace(Regex("""\s+"""), " ")
-            .trim()
+            .replace(Regex("""([^\s,]+)/[^\s,]+"""), "$1").replace(",", "").replace(Regex("""\s+"""), " ").trim()
     }
 
 
@@ -151,26 +179,19 @@ class IngredientImporter {
         val norm = normalizer.normalizePlForMatching(translate).joinToString(" ")
         println(" phrase: $phrase | translate: $translate | norm: $norm")
         repo.importFood(ingredient, translate, norm)
-        Thread.sleep(200)
+        Thread.sleep(250)
     }
 }
 
 private fun String.normalize(): String =
-    replace(Regex("\\braw\\b"), "")
-        .replace(Regex("[,\\s]+$"), "")
-        .replace(Regex("\\s+"), " ")
-        .trim()
+    replace(Regex("\\braw\\b"), "").replace(Regex("[,\\s]+$"), "").replace(Regex("\\s+"), " ").trim()
 
 private fun List<String>.keyOf(n: Int): String? = if (size >= n) take(n).joinToString(" ") else null
 
 // zwraca całą liste składników z arkusza bls
 fun readXlsx(path: String): List<BlsIngredientDto> {
     val inputStream =
-        Thread
-            .currentThread()
-            .contextClassLoader
-            .getResourceAsStream(path)
-            ?: error("bls.xlsx not found in resources")
+        Thread.currentThread().contextClassLoader.getResourceAsStream(path) ?: error("bls.xlsx not found in resources")
 
     inputStream.use { fis ->
         val workbook = XSSFWorkbook(fis)
@@ -179,149 +200,148 @@ fun readXlsx(path: String): List<BlsIngredientDto> {
         for (rowIndex in 2..sheet.lastRowNum) {
             val row = sheet.getRow(rowIndex) ?: continue
 
-            val dto =
-                BlsIngredientDto(
-                    row.getCell(0).stringCellValue,
-                    row.getCell(1).stringCellValue,
-                    BigDecimal.valueOf(row.getCell(2).numericCellValue),
-                    readOrZero(row.getCell(3)),
-                    readOrZero(row.getCell(4)),
-                    readOrZero(row.getCell(5)),
-                    readOrZero(row.getCell(6)),
-                    readOrZero(row.getCell(7)),
-                    readOrZero(row.getCell(8)),
-                    readOrZero(row.getCell(9)),
-                    readOrZero(row.getCell(10)),
-                    readOrZero(row.getCell(11)),
-                    readOrZero(row.getCell(12)),
-                    readOrZero(row.getCell(13)),
-                    readOrZero(row.getCell(14)),
-                    readOrZero(row.getCell(15)),
-                    readOrZero(row.getCell(16)),
-                    readOrZero(row.getCell(17)),
-                    readOrZero(row.getCell(18)),
-                    readOrZero(row.getCell(19)),
-                    readOrZero(row.getCell(20)),
-                    readOrZero(row.getCell(21)),
-                    readOrZero(row.getCell(22)),
-                    readOrZero(row.getCell(23)),
-                    readOrZero(row.getCell(24)),
-                    readOrZero(row.getCell(25)),
-                    readOrZero(row.getCell(26)),
-                    readOrZero(row.getCell(27)),
-                    readOrZero(row.getCell(28)),
-                    readOrZero(row.getCell(29)),
-                    readOrZero(row.getCell(30)),
-                    readOrZero(row.getCell(31)),
-                    readOrZero(row.getCell(32)),
-                    readOrZero(row.getCell(33)),
-                    readOrZero(row.getCell(34)),
-                    readOrZero(row.getCell(35)),
-                    readOrZero(row.getCell(36)),
-                    readOrZero(row.getCell(37)),
-                    readOrZero(row.getCell(38)),
-                    readOrZero(row.getCell(39)),
-                    readOrZero(row.getCell(40)),
-                    readOrZero(row.getCell(41)),
-                    readOrZero(row.getCell(42)),
-                    readOrZero(row.getCell(43)),
-                    readOrZero(row.getCell(44)),
-                    readOrZero(row.getCell(45)),
-                    readOrZero(row.getCell(46)),
-                    readOrZero(row.getCell(47)),
-                    readOrZero(row.getCell(48)),
-                    readOrZero(row.getCell(49)),
-                    readOrZero(row.getCell(50)),
-                    readOrZero(row.getCell(51)),
-                    readOrZero(row.getCell(52)),
-                    readOrZero(row.getCell(53)),
-                    readOrZero(row.getCell(54)),
-                    readOrZero(row.getCell(55)),
-                    readOrZero(row.getCell(56)),
-                    readOrZero(row.getCell(57)),
-                    readOrZero(row.getCell(58)),
-                    readOrZero(row.getCell(59)),
-                    readOrZero(row.getCell(60)),
-                    readOrZero(row.getCell(61)),
-                    readOrZero(row.getCell(62)),
-                    readOrZero(row.getCell(63)),
-                    readOrZero(row.getCell(64)),
-                    readOrZero(row.getCell(65)),
-                    readOrZero(row.getCell(66)),
-                    readOrZero(row.getCell(67)),
-                    readOrZero(row.getCell(68)),
-                    readOrZero(row.getCell(69)),
-                    readOrZero(row.getCell(70)),
-                    readOrZero(row.getCell(71)),
-                    readOrZero(row.getCell(72)),
-                    readOrZero(row.getCell(73)),
-                    readOrZero(row.getCell(74)),
-                    readOrZero(row.getCell(75)),
-                    readOrZero(row.getCell(76)),
-                    readOrZero(row.getCell(77)),
-                    readOrZero(row.getCell(78)),
-                    readOrZero(row.getCell(79)),
-                    readOrZero(row.getCell(80)),
-                    readOrZero(row.getCell(81)),
-                    readOrZero(row.getCell(82)),
-                    readOrZero(row.getCell(83)),
-                    readOrZero(row.getCell(84)),
-                    readOrZero(row.getCell(85)),
-                    readOrZero(row.getCell(86)),
-                    readOrZero(row.getCell(87)),
-                    readOrZero(row.getCell(88)),
-                    readOrZero(row.getCell(89)),
-                    readOrZero(row.getCell(90)),
-                    readOrZero(row.getCell(91)),
-                    readOrZero(row.getCell(92)),
-                    readOrZero(row.getCell(93)),
-                    readOrZero(row.getCell(94)),
-                    readOrZero(row.getCell(95)),
-                    readOrZero(row.getCell(96)),
-                    readOrZero(row.getCell(97)),
-                    readOrZero(row.getCell(98)),
-                    readOrZero(row.getCell(99)),
-                    readOrZero(row.getCell(100)),
-                    readOrZero(row.getCell(101)),
-                    readOrZero(row.getCell(102)),
-                    readOrZero(row.getCell(103)),
-                    readOrZero(row.getCell(104)),
-                    readOrZero(row.getCell(105)),
-                    readOrZero(row.getCell(106)),
-                    readOrZero(row.getCell(107)),
-                    readOrZero(row.getCell(108)),
-                    readOrZero(row.getCell(109)),
-                    readOrZero(row.getCell(110)),
-                    readOrZero(row.getCell(111)),
-                    readOrZero(row.getCell(112)),
-                    readOrZero(row.getCell(113)),
-                    readOrZero(row.getCell(114)),
-                    readOrZero(row.getCell(115)),
-                    readOrZero(row.getCell(116)),
-                    readOrZero(row.getCell(117)),
-                    readOrZero(row.getCell(118)),
-                    readOrZero(row.getCell(119)),
-                    readOrZero(row.getCell(120)),
-                    readOrZero(row.getCell(121)),
-                    readOrZero(row.getCell(122)),
-                    readOrZero(row.getCell(123)),
-                    readOrZero(row.getCell(124)),
-                    readOrZero(row.getCell(125)),
-                    readOrZero(row.getCell(126)),
-                    readOrZero(row.getCell(127)),
-                    readOrZero(row.getCell(128)),
-                    readOrZero(row.getCell(129)),
-                    readOrZero(row.getCell(130)),
-                    readOrZero(row.getCell(131)),
-                    readOrZero(row.getCell(132)),
-                    readOrZero(row.getCell(133)),
-                    readOrZero(row.getCell(134)),
-                    readOrZero(row.getCell(135)),
-                    readOrZero(row.getCell(136)),
-                    readOrZero(row.getCell(137)),
-                    readOrZero(row.getCell(138)),
-                    readOrZero(row.getCell(139)),
-                )
+            val dto = BlsIngredientDto(
+                row.getCell(0).stringCellValue,
+                row.getCell(1).stringCellValue,
+                BigDecimal.valueOf(row.getCell(2).numericCellValue),
+                readOrZero(row.getCell(3)),
+                readOrZero(row.getCell(4)),
+                readOrZero(row.getCell(5)),
+                readOrZero(row.getCell(6)),
+                readOrZero(row.getCell(7)),
+                readOrZero(row.getCell(8)),
+                readOrZero(row.getCell(9)),
+                readOrZero(row.getCell(10)),
+                readOrZero(row.getCell(11)),
+                readOrZero(row.getCell(12)),
+                readOrZero(row.getCell(13)),
+                readOrZero(row.getCell(14)),
+                readOrZero(row.getCell(15)),
+                readOrZero(row.getCell(16)),
+                readOrZero(row.getCell(17)),
+                readOrZero(row.getCell(18)),
+                readOrZero(row.getCell(19)),
+                readOrZero(row.getCell(20)),
+                readOrZero(row.getCell(21)),
+                readOrZero(row.getCell(22)),
+                readOrZero(row.getCell(23)),
+                readOrZero(row.getCell(24)),
+                readOrZero(row.getCell(25)),
+                readOrZero(row.getCell(26)),
+                readOrZero(row.getCell(27)),
+                readOrZero(row.getCell(28)),
+                readOrZero(row.getCell(29)),
+                readOrZero(row.getCell(30)),
+                readOrZero(row.getCell(31)),
+                readOrZero(row.getCell(32)),
+                readOrZero(row.getCell(33)),
+                readOrZero(row.getCell(34)),
+                readOrZero(row.getCell(35)),
+                readOrZero(row.getCell(36)),
+                readOrZero(row.getCell(37)),
+                readOrZero(row.getCell(38)),
+                readOrZero(row.getCell(39)),
+                readOrZero(row.getCell(40)),
+                readOrZero(row.getCell(41)),
+                readOrZero(row.getCell(42)),
+                readOrZero(row.getCell(43)),
+                readOrZero(row.getCell(44)),
+                readOrZero(row.getCell(45)),
+                readOrZero(row.getCell(46)),
+                readOrZero(row.getCell(47)),
+                readOrZero(row.getCell(48)),
+                readOrZero(row.getCell(49)),
+                readOrZero(row.getCell(50)),
+                readOrZero(row.getCell(51)),
+                readOrZero(row.getCell(52)),
+                readOrZero(row.getCell(53)),
+                readOrZero(row.getCell(54)),
+                readOrZero(row.getCell(55)),
+                readOrZero(row.getCell(56)),
+                readOrZero(row.getCell(57)),
+                readOrZero(row.getCell(58)),
+                readOrZero(row.getCell(59)),
+                readOrZero(row.getCell(60)),
+                readOrZero(row.getCell(61)),
+                readOrZero(row.getCell(62)),
+                readOrZero(row.getCell(63)),
+                readOrZero(row.getCell(64)),
+                readOrZero(row.getCell(65)),
+                readOrZero(row.getCell(66)),
+                readOrZero(row.getCell(67)),
+                readOrZero(row.getCell(68)),
+                readOrZero(row.getCell(69)),
+                readOrZero(row.getCell(70)),
+                readOrZero(row.getCell(71)),
+                readOrZero(row.getCell(72)),
+                readOrZero(row.getCell(73)),
+                readOrZero(row.getCell(74)),
+                readOrZero(row.getCell(75)),
+                readOrZero(row.getCell(76)),
+                readOrZero(row.getCell(77)),
+                readOrZero(row.getCell(78)),
+                readOrZero(row.getCell(79)),
+                readOrZero(row.getCell(80)),
+                readOrZero(row.getCell(81)),
+                readOrZero(row.getCell(82)),
+                readOrZero(row.getCell(83)),
+                readOrZero(row.getCell(84)),
+                readOrZero(row.getCell(85)),
+                readOrZero(row.getCell(86)),
+                readOrZero(row.getCell(87)),
+                readOrZero(row.getCell(88)),
+                readOrZero(row.getCell(89)),
+                readOrZero(row.getCell(90)),
+                readOrZero(row.getCell(91)),
+                readOrZero(row.getCell(92)),
+                readOrZero(row.getCell(93)),
+                readOrZero(row.getCell(94)),
+                readOrZero(row.getCell(95)),
+                readOrZero(row.getCell(96)),
+                readOrZero(row.getCell(97)),
+                readOrZero(row.getCell(98)),
+                readOrZero(row.getCell(99)),
+                readOrZero(row.getCell(100)),
+                readOrZero(row.getCell(101)),
+                readOrZero(row.getCell(102)),
+                readOrZero(row.getCell(103)),
+                readOrZero(row.getCell(104)),
+                readOrZero(row.getCell(105)),
+                readOrZero(row.getCell(106)),
+                readOrZero(row.getCell(107)),
+                readOrZero(row.getCell(108)),
+                readOrZero(row.getCell(109)),
+                readOrZero(row.getCell(110)),
+                readOrZero(row.getCell(111)),
+                readOrZero(row.getCell(112)),
+                readOrZero(row.getCell(113)),
+                readOrZero(row.getCell(114)),
+                readOrZero(row.getCell(115)),
+                readOrZero(row.getCell(116)),
+                readOrZero(row.getCell(117)),
+                readOrZero(row.getCell(118)),
+                readOrZero(row.getCell(119)),
+                readOrZero(row.getCell(120)),
+                readOrZero(row.getCell(121)),
+                readOrZero(row.getCell(122)),
+                readOrZero(row.getCell(123)),
+                readOrZero(row.getCell(124)),
+                readOrZero(row.getCell(125)),
+                readOrZero(row.getCell(126)),
+                readOrZero(row.getCell(127)),
+                readOrZero(row.getCell(128)),
+                readOrZero(row.getCell(129)),
+                readOrZero(row.getCell(130)),
+                readOrZero(row.getCell(131)),
+                readOrZero(row.getCell(132)),
+                readOrZero(row.getCell(133)),
+                readOrZero(row.getCell(134)),
+                readOrZero(row.getCell(135)),
+                readOrZero(row.getCell(136)),
+                readOrZero(row.getCell(137)),
+                readOrZero(row.getCell(138)),
+                readOrZero(row.getCell(139)),
+            )
             list.add(dto)
         }
         return list
@@ -337,10 +357,7 @@ fun readOrZero(cell: Cell?): BigDecimal {
         }
 
         CellType.STRING -> {
-            val raw =
-                cell.stringCellValue
-                    .trim()
-                    .lowercase()
+            val raw = cell.stringCellValue.trim().lowercase()
 
             when {
                 raw.isEmpty() -> {
@@ -356,10 +373,7 @@ fun readOrZero(cell: Cell?): BigDecimal {
                 }
 
                 else -> {
-                    raw
-                        .replace(",", ".")
-                        .toBigDecimalOrNull()
-                        ?: BigDecimal.ZERO
+                    raw.replace(",", ".").toBigDecimalOrNull() ?: BigDecimal.ZERO
                 }
             }
         }
@@ -376,4 +390,12 @@ fun readOrZero(cell: Cell?): BigDecimal {
             BigDecimal.ZERO
         }
     }
+}
+
+fun String.containsWord(word: String): Boolean {
+    val regex = Regex(
+        """(?<![\p{L}\p{N}])${Regex.escape(word)}(?![\p{L}\p{N}])""",
+        RegexOption.IGNORE_CASE
+    )
+    return regex.containsMatchIn(this)
 }

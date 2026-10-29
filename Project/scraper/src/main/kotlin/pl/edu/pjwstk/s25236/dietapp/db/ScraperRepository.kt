@@ -187,51 +187,6 @@ class ScraperRepository(
                 .onConflictDoNothing()
                 .execute()
         }
-
-//    fun findByTrigram(
-//        phrase: String,
-//        minScore: Double,
-//    ): List<IngredientMatch> {
-//        val phraseParam = DSL.`val`(phrase)
-//        val minScoreParam = DSL.`val`(minScore)
-//
-//        // ⬅️ WYRAŻENIE (bez aliasu) – do WHERE
-//        val scoreExpr: Field<Double> =
-//            DSL.field(
-//                "diet_app.similarity({0}, cast({1} as text))",
-//                Double::class.java,
-//                INGREDIENT_PL.NAME,
-//                phraseParam,
-//            )
-//
-//        // ⬅️ ALIAS – tylko do SELECT / ORDER BY
-//        val score = scoreExpr.`as`("score")
-//
-//        return context
-//            .select(
-//                INGREDIENT.ID,
-//                INGREDIENT_PL.NAME,
-//                score,
-//            ).from(INGREDIENT_PL)
-//            .join(INGREDIENT)
-//            .on(INGREDIENT_PL.INGREDIENT_ID.eq(INGREDIENT.ID))
-//            .where(
-//                DSL.condition(
-//                    "{0} % cast({1} as text)",
-//                    INGREDIENT_PL.NAME,
-//                    phraseParam,
-//                ),
-//            ).and(scoreExpr.ge(minScoreParam)) // ⬅️ TU JEST KLUCZOWA ZMIANA
-//            .orderBy(score.desc())
-//            .limit(3)
-//            .fetch { r ->
-//                IngredientMatch(
-//                    ingredientId = r.get(INGREDIENT.ID)!!,
-//                    name = r.get(INGREDIENT_PL.NAME)!!,
-//                    score = r.get(score)!!,
-//                )
-//            }
-//    }
     }
 
     fun findByTrigram(
@@ -241,24 +196,21 @@ class ScraperRepository(
         val phraseParam = DSL.`val`(phrase)
         val minScoreParam = DSL.`val`(minScore)
 
-        // ⬅️ Pełne wyrażenie similarity (do WHERE)
         val scoreExpr: Field<Double> =
             DSL.field(
-                "diet_app.similarity({0}, cast({1} as text))",
+                "public.similarity({0}, cast({1} as text))",
                 Double::class.java,
                 INGREDIENT.NORM,
                 phraseParam,
             )
-
-        // ⬅️ Alias tylko do SELECT / ORDER BY
         val score = scoreExpr.`as`("score")
-
         return context
             .select(
                 INGREDIENT.ID,
                 INGREDIENT.NAME_PL,
                 score,
             ).from(INGREDIENT)
+            .where(scoreExpr.ge(minScoreParam))
             .orderBy(score.desc())
             .limit(10)
             .fetch { r ->

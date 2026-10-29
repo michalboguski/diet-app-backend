@@ -10,38 +10,41 @@ class RecipeProcessor {
     val normalizer = IngredientNameNormalizer()
 
     val ingredientNormalizationMap: Map<String, String> = mapOf(
-        "mąki ziemniaczanej" to "Skrobia ziemniaczany",
-        "jajko" to "jajko kurze",
-        "mąka" to "mąka pszenna typ 550",
-        "cukier" to "cukier biały",
+        "mąka ziemniaczany" to "Skrobia ziemniaczany",
+        "jajo" to "jajko kurzy",
+        "jajko" to "jajko kurzy",
+        "mąka przenny" to "mąka pszenny typ 550",
+        "mąki" to "mąka pszenny typ 550",
+        "mąka" to "mąka pszenny typ 550",
         "olej" to "olej rzepakowy",
         "masło" to "masło najwyższy jakość",
         "mleko" to "mleko pełnotłusty świeży",
         "śmietany" to "śmietana",
         "białko" to "białko jajo kurzy",
-        "ghee" to "klarować"
+        "ghee" to "klarować",
+        "masy kajmakowy" to "mleko skondensowany słodzony",
+        "marchewki" to "marchew",
+        "sól" to "sól kamienny",
+        "serek typ philadelphia" to "mascarpone"
     )
 
     //   val recipeRepository = RecipeRepository()
     val scraperRepository = ScraperRepository(ScraperDb.dataSource)
 
     fun process(raw: RawRecipe): Double {
-        println()
-        var matchCount = 0
+        var matchCount = 0.0
         raw.ingredientLines.forEach { line -> println(line) }
         val cleanedLines: List<String> = cleaner.clean(raw.ingredientLines)
         val parsedIngredients: List<ParsedIngredient> = parser.parse(cleanedLines)
         parsedIngredients.forEach {
-            val normalized  = normalizer.normalizePlForMatching(it.candidates)
-            val norm = normalized.map {candidate -> ingredientNormalizationMap[candidate] ?: candidate}
+            val normalized = normalizer.normalizePlForMatching(it.candidates)
+            val norm = normalizeIngredient(normalized, ingredientNormalizationMap)
             val match = findMatch(norm)
-            if (match != null) {
-                matchCount++
-            }
-            println("candidates: ${it.candidates} | norm: $norm | ${match?.name ?: "NIE ZNALEZIONO" } | score: ${match?.score}")
+            matchCount += match.second
+            println("${it.amount} ${it.measurement.name} ${it.candidates} norm: $norm  |  ${match.first?.name ?: "not fount in db"} | score: ${match.second}")
         }
 
-        return matchCount.toDouble() / parsedIngredients.size
+        return matchCount / parsedIngredients.size
         // return matchCount.toDouble() / raw.ingredientLines.size
 
         // dla każdej lini składnika
@@ -58,11 +61,35 @@ class RecipeProcessor {
         // mamy liste składników teraz mamy albo i nie ilość, jednostke i
     }
 
+    fun normalizeIngredient(
+        list: List<String>,
+        normalizationMap: Map<String, String>
+    ): List<String> {
+        val name = list.joinToString(" ")
+        if (normalizationMap.isEmpty()) return name.split(" ").toList()
+
+        val replacements = normalizationMap.entries.associate {
+            it.key.lowercase() to it.value
+        }
+
+        val alternatives = normalizationMap.keys
+            .sortedByDescending { it.length }
+            .joinToString("|") { Regex.escape(it) }
+
+        val regex = Regex(
+            """(?<![\p{L}\p{N}])(?:$alternatives)(?![\p{L}\p{N}])""",
+            RegexOption.IGNORE_CASE
+        )
+
+        return regex.replace(name) { match ->
+            replacements[match.value.lowercase()] ?: match.value
+        }.split(" ").toList()
+    }
+
     // to do
     fun transformName(line: String): List<String> {
         return line.split(" ")
     }
-
 
 
     fun generatePhrases(tokens: List<String>): List<String> {
@@ -75,30 +102,33 @@ class RecipeProcessor {
         return result
     }
 
-    fun findMatch(tokens: List<String>): IngredientMatch? {
-        val phrases = generatePhrases(tokens)
-        var bestMatch: IngredientMatch? = null
+    fun findMatch(tokens: List<String>): Pair<IngredientMatch?, Double> {
         var bestScore: Double = 0.0
+        if (tokens.isEmpty()) return null to bestScore
+        val wordsCount = tokens.size
+        val phrases = generatePhrases(tokens).toSet()
+        var bestMatch: IngredientMatch? = null
+
         for (phrase in phrases) {
+            val phaseCount = phrase.split(" ").size
+            val coverage = phaseCount.toDouble() / tokens.size
             val minScore =
-                when (phrase.split(" ").size) {
-                    1 -> 0.85
-                    2 -> 0.7
+                when (wordsCount) {
+                    1 -> 0.80
+                    2 -> 0.65
                     else -> 0.5
                 }
             val matches = scraperRepository.findByTrigram(phrase, minScore)
             for (match in matches) {
-                val weightedScore = match.score // * phrase.split(" ").size
-
+                val weightedScore = match.score * coverage
                 if (bestMatch == null || weightedScore > bestScore) {
                     bestScore = weightedScore
                     bestMatch = match
                 }
             }
-            if (bestScore > 3.5) break
+            if (bestScore > 0.99) break
         }
-        //  println("best score: $bestScore")
-        return bestMatch
+        return bestMatch to bestScore
     }
 }
 

@@ -16,7 +16,10 @@ class IngredientLineParser {
             "pokrojone",
             "opcjonalnie",
             "dowolne",
-        )
+            "zimnego",
+            "startej",
+            "startego",
+            )
 
     fun parse(ingredientLines: List<String>): List<ParsedIngredient> {
         return ingredientLines
@@ -97,7 +100,7 @@ class IngredientLineParser {
         val amountMatches = words.filter { regex.matches(it) }
         return when (amountMatches.size) {
             0 -> 1.0 to listOf(-1)
-            1 -> parseOneToken(words, index,words.indexOf(amountMatches[0]))
+            1 -> parseOneToken(words, index, words.indexOf(amountMatches[0]))
             2 -> parseTwoTokens(words, index, words.indexOf(amountMatches[0]), words.indexOf(amountMatches[1]))
             else -> 1.0 to listOf(-1) // to sprawdzić - zrobione na szybko
         }
@@ -107,24 +110,26 @@ class IngredientLineParser {
         return words[index1].toDouble() to listOf(index1)
     }
 }
-    fun parseTwoTokens(words: List<String>, mIndex: Int, index1: Int, index2: Int): Pair<Double, List<Int>> {
-        return when (index2 - index1) {
-            1 -> words[index1].toDouble() + words[index2].toDouble() to listOf(index1, index2)
-            2 -> {
-                val operator = words[index2-1].trim()
-                when (operator) {
-                    "-" -> words[index1].toDouble()*0.5 + words[index2].toDouble()*0.5 to listOf(index1, index2)
-                    "i" -> words[index1].toDouble() + words[index2].toDouble() to listOf(index1, index2)
-                    "/" -> words[index1].toDouble() / words[index2].toDouble() to listOf(index1, index2)
-                    else -> words[index1].toDouble() to listOf(index1, index2)
-                }
-            }
-            else -> words[index1].toDouble() to listOf(index1, index2)
-        }
-    }
 
-    data class ParsedIngredient(
-        val amount: Double,
-        val measurement: Measurement,
-        val candidates: String,
-    )
+fun parseTwoTokens(words: List<String>, mIndex: Int, index1: Int, index2: Int): Pair<Double, List<Int>> {
+    return when (index2 - index1) {
+        1 -> words[index1].toDouble() + words[index2].toDouble() to listOf(index1, index2)
+        2 -> {
+            val operator = words[index2 - 1].trim()
+            when (operator) {
+                "-" -> words[index1].toDouble() * 0.5 + words[index2].toDouble() * 0.5 to listOf(index1, index2)
+                "i" -> words[index1].toDouble() + words[index2].toDouble() to listOf(index1, index2)
+                "/" -> words[index1].toDouble() / words[index2].toDouble() to listOf(index1, index2)
+                else -> words[index1].toDouble() to listOf(index1, index2)
+            }
+        }
+
+        else -> words[index1].toDouble() to listOf(index1, index2)
+    }
+}
+
+data class ParsedIngredient(
+    val amount: Double,
+    val measurement: Measurement,
+    val candidates: String,
+)

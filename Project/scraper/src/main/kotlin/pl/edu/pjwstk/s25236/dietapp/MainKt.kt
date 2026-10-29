@@ -1,21 +1,17 @@
 package pl.edu.pjwstk.s25236.dietapp
 
-import pl.edu.pjwstk.s25236.dietapp.bls.IngredientImporter
 import pl.edu.pjwstk.s25236.dietapp.processing.RecipeProcessor
 import pl.edu.pjwstk.s25236.dietapp.scrap.RawRecipe
 import pl.edu.pjwstk.s25236.dietapp.scrap.RecipeSource
-import java.nio.charset.Charset
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 
 fun main() {
-//val i = IngredientImporter()
-//    i.process()
-//
+//IngredientImporter().process()
+//    IngredientImporter().processByNameEn("Coffee instant powder")
     val procesor = RecipeProcessor()
-    val list = mutableListOf<Double>()
-    readAllRawRecipes(Path.of("saved-recipes"))[0]
+    readAllRawRecipes(Path.of("saved-recipes"))[7]
         .let { recipe ->
         val rawRecipe =
             RawRecipe(

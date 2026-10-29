@@ -24,10 +24,13 @@ enum class Measurement(
     PIECE(listOf("kawałek", "kawałki", "kawałków"), Some(1.0)),
     SEED(listOf("ziarno", "ziarna", "ziaren", "ziarenko", "ziarnenka", "ziarenek"), Some(1.0)),
     LEAF(listOf("liść", "liści", "liście"), Some(5.0)),
-    EGG(listOf("jajko", "jajka", "jajek"), Some(45.0)),
+    EGG(listOf("jajko", "jajka", "jajek", "jaj"), Some(45.0)),
     JELLY(listOf("galaretka", "galaretki", "galaretek"), Some(10.0)),
     PUDDING(listOf("budyń", "budyniu", "budyni"), Some(10.0)),
     KISSEL(listOf("kisiel", "kisieli", "kiślów"), Some(10.0)),
+    CAN(listOf("puszka", "puszki", "puszek", "puszkę"), Some(400.0)),
+    PINCH(listOf("szczypta", "szczypty", "szczyptę"), Some(0.3)),
+    BAR(listOf("tabliczka", "tabliczki"), Some(100.0)),
     UNKNOWN(listOf("unknown"), Some(1.0)),
     ;
 
