@@ -6,7 +6,7 @@ import javax.sql.DataSource
 object ScraperDb {
     val dataSource: DataSource =
         HikariDataSource().apply {
-            this.jdbcUrl = "jdbc:postgresql://146.59.95.136:5432/diet_db"
+            this.jdbcUrl = "jdbc:postgresql://localhost:5432/diet_db"
             this.username = "diet-generator-agent"
             this.password = "agent123"
             this.maximumPoolSize = 3
