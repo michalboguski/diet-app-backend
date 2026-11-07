@@ -1,17 +1,14 @@
 package pl.edu.pjwstk.s25236.dietapp.utils
 
-import kotlinx.coroutines.runBlocking
 import pl.edu.pjwstk.s25236.dietapp.processing.IngredientLineParser
 import pl.edu.pjwstk.s25236.dietapp.processing.IngredientNameNormalizer
 import pl.edu.pjwstk.s25236.dietapp.processing.RecipeCleaner
-import pl.edu.pjwstk.s25236.dietapp.readAllRawRecipes
-import pl.edu.pjwstk.s25236.dietapp.saveRawRecipe
-import pl.edu.pjwstk.s25236.dietapp.scrap.PlaywrightBrowser
-import pl.edu.pjwstk.s25236.dietapp.scrap.PrzeslijPrzepisScraper
-import pl.edu.pjwstk.s25236.dietapp.scrap.RawRecipe
+import java.nio.file.Files
+import java.nio.file.Path
 import kotlin.io.path.Path
 
 object ScraperUtils {
+
     fun printNormalizedIngredientNames() {
         val recipesFromFiles = readAllRawRecipes(Path("saved-recipes"))
         val cleaner = RecipeCleaner()
@@ -72,17 +69,35 @@ object ScraperUtils {
         }
     }
 
-    fun scrapAndSaveRecipesInFiles(): Unit =
-        runBlocking {
-            val outputDir = Path("saved-recipes")
-            PlaywrightBrowser().use { browser ->
-                val scraper = PrzeslijPrzepisScraper(browser)
-                val result: List<RawRecipe> = scraper.scrap(2)
+    fun readAllRawRecipes(dir: Path): List<RawRecipeFile> =
+        Files
+            .list(dir)
+            .filter { it.toString().endsWith(".txt") }
+            .sorted()
+            .map(::readRawRecipe)
+            .toList()
 
-                result.forEach { recipe ->
-                    println("link: ${recipe.link}")
-                    saveRawRecipe(outputDir, recipe)
-                }
-            }
+    fun readRawRecipe(file: Path): RawRecipeFile {
+        val lines = Files.readAllLines(file)
+
+        val separatorIndex = lines.indexOf("===========")
+        require(separatorIndex >= 0) {
+            "Separator '$===========' not found in file: $file"
         }
+        val ingredients =
+            lines
+                .subList(0, separatorIndex)
+                .filter { it.isNotBlank() }
+        val steps =
+            lines
+                .subList(separatorIndex + 1, lines.size)
+                .filter { it.isNotBlank() }
+        return RawRecipeFile(ingredients, steps)
+    }
+
+    data class RawRecipeFile(
+        val ingredientLines: List<String>,
+        val stepLines: List<String>,
+    )
+
 }
