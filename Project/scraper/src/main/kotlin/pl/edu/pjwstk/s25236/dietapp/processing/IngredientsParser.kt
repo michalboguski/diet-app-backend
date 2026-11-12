@@ -1,8 +1,22 @@
 package pl.edu.pjwstk.s25236.dietapp.processing
 
 import pl.edu.pjwstk.s25236.dietapp.common.Measurement
+import pl.edu.pjwstk.s25236.dietapp.processing.ParseResult.ParseError
+import pl.edu.pjwstk.s25236.dietapp.processing.ParseResult.ParseError.ParseErrorType
 
 class IngredientLineParser {
+    private val DECIMAL = """\d+(?:[.,]\d+)?"""
+    private val FRACTION = """\d+\s*/\s*\d+"""
+    private val NUMBER = """(?:$FRACTION|$DECIMAL)"""
+    private val MIXED = """\d+\s+(?:i\s+)?$FRACTION"""
+    private val amountRegex = Regex(
+        """(?<![\p{L}\p{N}/.,])""" +
+                """(?:$NUMBER\s*[-–—]\s*$NUMBER|$MIXED|$NUMBER\s+i\s+$NUMBER|$NUMBER)""" +
+                """(?![\p{L}\p{N}/.,])"""
+    )
+    private val rangeSeparator = Regex("""\s*[-–—]\s*""")
+    private val additionSeparator = Regex("""\s+i\s+""")
+    private val mixedSeparator = Regex("""\s+(?:i\s+)?""")
     val ignoredTokens =
         listOf(
             "i",
@@ -19,117 +33,160 @@ class IngredientLineParser {
             "zimnego",
             "startej",
             "startego",
-            )
+        )
 
-    fun parse(ingredientLines: List<String>): List<ParsedIngredient> {
+    fun parse(ingredientLines: List<String>): List<ParseResult> {
         return ingredientLines
-            .map { splitNumberAndUnit(it) }
-            .map { parseLine(it.split(" ")) }
+            .map { parseLine(it) }
             .toList()
     }
 
-    fun parseLine(line: List<String>): ParsedIngredient {
-        val words = ignoreTokens(line)
+    fun parseLine(line: String): ParseResult {
+        val tokens = line.split(" ")
+        val words = ignoreTokens(tokens)
         val unit = extractUnitToken(words)
+        if (unit.first == Measurement.UNKNOWN) return ParseError(ParseErrorType.UNIT)
         val amount = extractAmount(words, unit.second)
+        if (amount.first == -1.0) return ParseError(ParseErrorType.AMOUNT)
         val candidates =
             extractIngredientCandidates(
                 words = words,
-                indexed = amount.second.toSet() + unit.let {
-                    if (it.first in Measurement.measurementsAsIngredients) return@let -1
-                    else return@let it.second
+                indexesToDelete = amount.second.toSet() + unit.let {
+                    if (it.first in Measurement.measurementsAsIngredients) return@let emptySet()
+                    else return@let setOf(it.second)
                 }
             )
-        println(words.joinToString(" ") + " | " + amount.second.toSet() + unit.second)
-        return ParsedIngredient(
-            amount = amount.first,
-            measurement = unit.first,
-            candidates = candidates,
-        )
+        val candidatesSize = candidates.size
+        return when {
+            candidatesSize == 0 -> ParseError(ParseErrorType.NO_CANDIDATES)
+            candidatesSize in (1..6) -> ParseResult.ParseSuccess(
+                amount = amount.first,
+                measurement = unit.first,
+                candidates = candidates
+            )
+
+            candidatesSize > 6 -> ParseError(ParseErrorType.TO_MACH_CANDIDATES)
+            else -> ParseError(ParseErrorType.UNKNOWN)
+        }
     }
 
-    private val fractionPattern =
-        Regex("""\d+\s*/\s*\d+""")
-
-    private val regex =
-        Regex("""\d+[.,]\d+|\d+""")
-
-    private val separateRegex =
-        Regex("""(\d)([a-zA-ZąćęłńóśżźĄĆĘŁŃÓŚŻŹ])""")
-
-    fun splitNumberAndUnit(line: String): String = line.replace(separateRegex, "$1 $2")
-
-    fun extractNumberTokens(line: String): List<String> =
-        regex
-            .findAll(line)
-            .map { it.value }
-            .toList()
-
     fun extractAmount(words: List<String>, index: Int): Pair<Double, List<Int>> {
-        return when (index) {
-            -1 -> 0.0 to listOf(-1)
-            0 -> 1.0 to listOf(0)
-            else -> parseMeasurementAtIndex(words, index)
-        }
+        if (index !in words.indices) return 0.0 to emptyList()
+        if (index == 0) return 1.0 to emptyList()
+        return parseMeasurementAtIndex(words, index)
     }
 
     fun extractUnitToken(words: List<String>): Pair<Measurement, Int> {
         words.forEachIndexed { index, word ->
             val m = Measurement.fromText(word)
-            if (m != Measurement.UNKNOWN) {
-                return m to index
-            }
+            if (m != Measurement.UNKNOWN) return Pair(m, index)
         }
-
-        return Measurement.UNKNOWN to -1
+        return Pair(Measurement.UNKNOWN, -1)
     }
 
     fun extractIngredientCandidates(
         words: List<String>,
-        indexed: Set<Int>,
-    ): String {
-        return words.filterIndexed { index, _ -> index !in indexed }.joinToString(" ")
+        indexesToDelete: Set<Int>,
+    ): List<String> {
+        return words.filterIndexed { index, _ -> index !in indexesToDelete }
     }
 
     fun ignoreTokens(tokens: List<String>): List<String> = tokens.filter { !ignoredTokens.contains(it) }.toList()
 
+    private fun parseSimpleNumber(text: String): Double? {
+        val parts = text.trim().split('/')
+
+        if (parts.size == 1) {
+            return parts[0].replace(',', '.').toDoubleOrNull()
+                ?.takeIf { it.isFinite() }
+        }
+
+        if (parts.size != 2) return null
+
+        val numerator = parts[0].trim().toDoubleOrNull() ?: return null
+        val denominator = parts[1].trim().toDoubleOrNull() ?: return null
+
+        if (denominator == 0.0) return null
+
+        return (numerator / denominator).takeIf { it.isFinite() }
+    }
+
+    private fun parseAmount(text: String): Double? {
+        val range = text.split(rangeSeparator)
+        if (range.size == 2) {
+            val from = parseSimpleNumber(range[0]) ?: return null
+            val to = parseSimpleNumber(range[1]) ?: return null
+            return from / 2.0 + to / 2.0
+        }
+
+        val addition = text.split(additionSeparator)
+        if (addition.size == 2) {
+            val first = parseSimpleNumber(addition[0]) ?: return null
+            val second = parseSimpleNumber(addition[1]) ?: return null
+            return first + second
+        }
+
+        val mixed = text.trim().split(mixedSeparator, limit = 2)
+        if (mixed.size == 2 && mixed[0].all { it.isDigit() }) {
+            val whole = parseSimpleNumber(mixed[0]) ?: return null
+            val fraction = parseSimpleNumber(mixed[1]) ?: return null
+            return whole + fraction
+        }
+
+        return parseSimpleNumber(text)
+    }
+
     fun parseMeasurementAtIndex(
         words: List<String>,
-        index: Int
+        index: Int,
     ): Pair<Double, List<Int>> {
-        val amountMatches = words.filter { regex.matches(it) }
-        return when (amountMatches.size) {
-            0 -> 1.0 to listOf(-1)
-            1 -> parseOneToken(words, index, words.indexOf(amountMatches[0]))
-            2 -> parseTwoTokens(words, index, words.indexOf(amountMatches[0]), words.indexOf(amountMatches[1]))
-            else -> 1.0 to listOf(-1) // to sprawdzić - zrobione na szybko
+        val fallback = -1.0 to listOf(-1)
+        val text = words.joinToString(" ")
+        var offset = 0
+        val wordRanges = words.map { word ->
+            val range = offset until (offset + word.length)
+            offset += word.length + 1
+            range
         }
-    }
+        val measurementRange = wordRanges[index]
 
-    fun parseOneToken(words: List<String>, mIndex: Int, index1: Int): Pair<Double, List<Int>> {
-        return words[index1].toDouble() to listOf(index1)
-    }
-}
-
-fun parseTwoTokens(words: List<String>, mIndex: Int, index1: Int, index2: Int): Pair<Double, List<Int>> {
-    return when (index2 - index1) {
-        1 -> words[index1].toDouble() + words[index2].toDouble() to listOf(index1, index2)
-        2 -> {
-            val operator = words[index2 - 1].trim()
-            when (operator) {
-                "-" -> words[index1].toDouble() * 0.5 + words[index2].toDouble() * 0.5 to listOf(index1, index2)
-                "i" -> words[index1].toDouble() + words[index2].toDouble() to listOf(index1, index2)
-                "/" -> words[index1].toDouble() / words[index2].toDouble() to listOf(index1, index2)
-                else -> words[index1].toDouble() to listOf(index1, index2)
+        val match = amountRegex.findAll(text)
+            .filter { match ->
+                match.range.last < measurementRange.first ||
+                        match.range.first > measurementRange.last
             }
+            .minByOrNull { match ->
+                if (match.range.last < measurementRange.first) {
+                    measurementRange.first - match.range.last
+                } else {
+                    match.range.first - measurementRange.last
+                }
+            }
+            ?: return fallback
+        val amount = parseAmount(match.value) ?: return fallback
+        val consumedIndices = wordRanges.indices.filter { wordIndex ->
+            val range = wordRanges[wordIndex]
+            !range.isEmpty() &&
+                    range.first <= match.range.last &&
+                    range.last >= match.range.first
         }
-
-        else -> words[index1].toDouble() to listOf(index1, index2)
+        return amount to consumedIndices
     }
 }
 
-data class ParsedIngredient(
-    val amount: Double,
-    val measurement: Measurement,
-    val candidates: String,
-)
+sealed interface ParseResult {
+    data class ParseSuccess(
+        val amount: Double,
+        val measurement: Measurement,
+        val candidates: List<String>,
+    ) : ParseResult
+
+    data class ParseError(
+        val type: ParseErrorType,
+    ) : ParseResult {
+        enum class ParseErrorType {
+            UNIT, AMOUNT, NO_CANDIDATES, TO_MACH_CANDIDATES, UNKNOWN
+        }
+    }
+}
+

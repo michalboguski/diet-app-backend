@@ -1,7 +1,11 @@
 package pl.edu.pjwstk.s25236.dietapp.processing
 
+import kotlin.collections.filter
+import kotlin.collections.map
+import kotlin.text.split
+
 class RecipeCleaner {
-    val banned =
+    private val banned =
         setOf(
             "dekoracja",
             "wody",
@@ -16,46 +20,129 @@ class RecipeCleaner {
             "barwniki",
             "obtaczania",
             "*",
-        )
+            "polewa",
+            "dodatkowo",
+            "ciasto",
+            "biszkopt",
+            )
 
-    fun clean(rawLines: List<String>): List<String> =
-        splitLinesOnPlus(rawLines)
-            .asSequence()
-            .filter { !it.contains(Regex("^\\s*\\*")) }
-            .map { it.removeLeadingDash() }
-            .map { it.removeWhitespace() }
-            .map { it.deleteContentAfterDash() }
-            .map { it.removeAsterisk() }
-            .map { it.normalizeTypography() }
-            .map { it.replace("ml.", "ml") }
-            .map { it.normalizeCommas() }
-            .map { it.removeBracketContent() }
-            .map { it.removeEndChars() }
-            .map { it.lowercase() }
-            .filter { it.isNotBlank() }
-            .filter { it.shouldReject(banned) }
-            .toList()
+    private val separateRegex = Regex("""(\d)([a-zA-ZąćęłńóśżźĄĆĘŁŃÓŚŻŹ])""")
+    private val dotBetweenLettersRegex = Regex("""(?<=\p{L})\.(?=\p{L})""")
+    private val backslashFractionRegex = Regex("""(?<=\d)\\(?=\d)""")
 
-    fun String.deleteContentAfterDash(): String {
-        return this.split(" - ").first().trim()
-    }
+    fun splitNumberAndUnit(line: String): List<String> =
+        line.replace(separateRegex, "$1 $2").split(" ")
 
-    fun String.removeAsterisk(): String {
-        return this.replace(Regex("(?<=\\S)\\*(?=\\s|$)"), "")
-    }
+    fun String.separateWordsAfterDot(): String =
+        replace(dotBetweenLettersRegex, " ")
 
+    fun String.normalizeFractionSlash(): String =
+        replace(backslashFractionRegex, "/")
 
-    private fun splitLinesOnPlus(lines: List<String>): List<String> =
+    private fun splitLines(lines: List<String>): List<String> =
         lines.flatMap { line ->
-            if ('+' in line) {
-                line
-                    .split('+')
-                    .map { it.trim() }
-                    .filter { it.isNotBlank() }
-            } else {
-                listOf(line)
+            when {
+                '+' in line ->
+                    line.split('+')
+                        .map { it.trim() }
+                        .filter { it.isNotBlank() }
+
+                line.trim() in setOf(
+                    "sól, pieprz",
+                    "sól i pieprz",
+                    "● sól, pieprz",
+                ) -> listOf("sól", "pieprz")
+
+                else -> listOf(line)
             }
         }
+
+    fun String.mapLine(): String =
+        when (this.trim()) {
+            "1 kostka masła" -> "200 g masła"
+            "cukier waniliowy" -> "30 g cukier waniliowy"
+            "cukier wanilinowy" -> "30 g cukier waniliowy"
+            "1 cukier waniliowy" -> "30 g cukier waniliowy"
+            "-1 cukier waniliowy" -> "30 g cukier waniliowy"
+            "2 cukry waniliowe" -> "60 g cukier waniliowy"
+            "cukier" -> "10 g cukier"
+            "sok z 0.5 cytryny" -> "60 g cytryna"
+            "sok z połowy cytryny" -> "60 g cytryna"
+            "sok z cytryny" -> "120 g cytryna"
+            "sok z 1 cytryny" -> "120 g cytryna"
+            "1 cytryna" -> "120 g cytryna"
+            "olej do smażenia" -> "20 g olej rzepakowy"
+            "olej" -> "20 g olej rzepakowy"
+            "sól" -> "5 g sól"
+            "● sól" -> "5 g sól"
+            "● pieprz" -> "5 g pieprz"
+            "sól morska" -> "5 g sól"
+            "pieprz" -> "5 g pieprz"
+            "pieprz czarny" -> "5 g pieprz"
+            "pieprz czarny świeżo mielony" -> "5 g pieprz"
+            "2 budynie śmietankowe" -> "60 g budyń"
+            "2 budynie waniliowe" -> "60 g budyń"
+            "cukier puder do posypania" -> "10 g cukier"
+            "cukier puder" -> "10 g cukier"
+            "mąka pszenna do posypania stolnicy" -> "mąka pszenna 20 g"
+            "olej rzepakowy do smażenia" -> "olej rzepakowy 20 g"
+            "wiórki kokosowe" -> "100 g wiórki kokosowe"
+            "natka pietruszki" -> "10 g natka pietruszki"
+            "majeranek" -> "5 g majeranek"
+            "bułka tarta" -> "bułka tarta 50 g"
+            "papier do pieczenia" -> ""
+            "2 x" -> ""
+            "-1 śmietan-fix" -> ""
+            else -> this
+        }
+
+    fun cleanLines(rawLines: List<String>): List<String> =
+        splitLines(rawLines)
+            .asSequence()
+            .map { cleanLine(it) }
+            .filter { it.isNotBlank() }
+            .map { splitNumberAndUnit(it).joinToString(" ") }
+            .toList()
+
+    fun cleanLine(rawLine: String): String {
+        if (rawLine.contains(Regex("""^\s*\*"""))) return ""
+        return rawLine
+            .removePartName()
+            .removeLeadingDash()
+            .removeWhitespace()
+            .deleteContentAfterDash()
+            .removeAsterisk()
+            .normalizeFractionSlash()
+            .normalizeTypography()
+            .replace("ml.", "ml")
+            .separateWordsAfterDot()
+            .replace("ok.", "")
+            .normalizeCommas()
+            .removeBracketContent()
+            .removeEndChars()
+            .lowercase()
+            .mapLine()
+            .takeUnless { it.isBlank() || it.shouldReject(banned) }
+            .orEmpty()
+    }
+}
+
+fun String.deleteContentAfterDash(): String {
+    return this.split(" - ").first().trim()
+}
+
+fun String.removeAsterisk(): String {
+    return this.replace(Regex("(?<=\\S)\\*(?=\\s|$)"), "")
+}
+
+fun String.removePartName(): String {
+    if (":" in this) {
+        val second = this.split(":")[1].trim()
+        return if (second.isNotBlank())
+            this.replace(":", "")
+        else ""
+    }
+    return this
 }
 
 fun String.removeLeadingDash(): String {
@@ -109,5 +196,5 @@ fun String.shouldReject(banned: Set<String>): Boolean {
             .split(" ")
             .filter { it.isNotBlank() }
             .map { it.trim() }
-    return !tokens.any { it in banned }
+    return tokens.any { it in banned }
 }

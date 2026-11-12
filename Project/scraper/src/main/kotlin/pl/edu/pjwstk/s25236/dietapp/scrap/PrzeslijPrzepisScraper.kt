@@ -3,8 +3,8 @@ package pl.edu.pjwstk.s25236.dietapp.scrap
 class PrzeslijPrzepisScraper(
     override val browser: PlaywrightBrowser,
 ) : RecipeScraper {
-    override val service = "przyslijprzepis"
-    override val paths = prepareServicePaths(service)
+    override val source = RecipeSource.PRZESLIJ_PRZEPIS
+    override val paths = prepareServicePaths(source.service)
     override val page = browser.newPage(this)
 
     override fun buildPageUrl(
