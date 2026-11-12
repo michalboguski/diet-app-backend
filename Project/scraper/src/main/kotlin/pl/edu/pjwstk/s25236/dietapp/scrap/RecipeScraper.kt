@@ -17,7 +17,7 @@ import kotlin.use
 
 interface RecipeScraper : AutoCloseable {
     val browser: PlaywrightBrowser
-    val service: String
+    val source: RecipeSource
     val page: Page
     val paths: ServicePaths
 
@@ -60,7 +60,7 @@ interface RecipeScraper : AutoCloseable {
             link,
             Page.NavigateOptions().setWaitUntil(WaitUntilState.DOMCONTENTLOADED).setTimeout(20_000.0),
         )
-        clickRodo(page, service)
+        clickRodo(page, source.service)
         page.tryClosePopups()
         return page
     }
@@ -239,6 +239,7 @@ interface RecipeScraper : AutoCloseable {
         val separator = "==========="
 
         val content = buildString {
+            appendLine(recipe.link)
             recipe.ingredientLines.forEach { appendLine(it) }
             appendLine(separator)
             recipe.stepLines.forEach { appendLine(it) }

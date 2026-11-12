@@ -5,7 +5,7 @@ import org.jooq.Field
 import org.jooq.SQLDialect
 import org.jooq.impl.DSL
 import pl.edu.pjwstk.s25236.dietapp.bls.BlsIngredientDto
-import pl.edu.pjwstk.s25236.dietapp.processing.IngredientMatch
+import pl.edu.pjwstk.s25236.dietapp.processing.ProcessResult
 import pl.edu.pjwstk.s25236.dietgenerator.jooq.tables.references.INGREDIENT
 import javax.sql.DataSource
 
@@ -189,37 +189,47 @@ class ScraperRepository(
         }
     }
 
-    fun findByTrigram(
-        phrase: String,
-        minScore: Double,
-    ): List<IngredientMatch> {
+    fun findByTrigram(phrase: String, minScore: Double): ProcessResult {
         val phraseParam = DSL.`val`(phrase)
-        val minScoreParam = DSL.`val`(minScore)
-
-        val scoreExpr: Field<Double> =
-            DSL.field(
+        val scoreExpr: Field<Double> = DSL.field(
                 "public.similarity({0}, cast({1} as text))",
                 Double::class.java,
                 INGREDIENT.NORM,
-                phraseParam,
-            )
+                phraseParam)
+        val distanceExpr: Field<Double> =
+            DSL.field(
+                "{0} OPERATOR(public.<->) cast({1} as text)",
+                Double::class.java,
+                INGREDIENT.NORM,
+                phraseParam)
         val score = scoreExpr.`as`("score")
-        return context
+
+        val candidate = context
             .select(
                 INGREDIENT.ID,
                 INGREDIENT.NAME_PL,
-                score,
-            ).from(INGREDIENT)
-            .where(scoreExpr.ge(minScoreParam))
-            .orderBy(score.desc())
-            .limit(10)
-            .fetch { r ->
-                IngredientMatch(
-                    ingredientId = r.get(INGREDIENT.ID)!!,
-                    name = r.get(INGREDIENT.NAME_PL)!!,
-                    score = r.get(score)!!,
+                score
+            )
+            .from(INGREDIENT)
+            .where(INGREDIENT.NORM.isNotNull())
+            .orderBy(distanceExpr.asc(), INGREDIENT.ID.asc())
+            .limit(1)
+            .fetchOne { record ->
+                ProcessResult.IngredientMatch(
+                    ingredientId = record.get(INGREDIENT.ID)!!,
+                    name = record.get(INGREDIENT.NAME_PL)!!,
+                    score = record.get(score)!!,
                 )
             }
+            ?: return ProcessResult.ProcessError(
+                type = ProcessResult.ProcessError.ProcessErrorType.NOT_FOUND,
+            )
+        return when {
+            candidate.score >= minScore -> candidate
+            else -> ProcessResult.ProcessError(
+                type = ProcessResult.ProcessError.ProcessErrorType.LOW_SCORE,
+            )
+        }
     }
 
 //    fun insertRecipe(recipe: RecipeDto): Long =

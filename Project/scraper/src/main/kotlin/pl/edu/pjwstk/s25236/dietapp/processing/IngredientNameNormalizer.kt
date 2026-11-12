@@ -26,7 +26,6 @@ class IngredientNameNormalizer {
                     }
             }
         }
-        println("Dictionary created with ${map.size} entries")
         return map.toMap()
     }
 
