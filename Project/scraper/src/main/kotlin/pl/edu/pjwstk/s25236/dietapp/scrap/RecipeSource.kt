@@ -5,5 +5,13 @@ enum class RecipeSource(
 ) {
     KWESTIA_SMAKU("kwestiasmaku"),
     ANIA_GOTUJE("aniagotuje"),
-    PRZESLIJ_PRZEPIS("przyslijprzepis")
+    PRZESLIJ_PRZEPIS("przyslijprzepis"),
+    DORADCA_SMAKU("doradcasmku"),
+    SMAKER("smker"),
+    LIDL("lidl"),
+    PRZEPISY_PL("przepisypl"),
+    MOJE_GOTOWANIE("mojegotowanie"),
+    PO_PROSTU_PYCHA("poprostupycha"),
+    MNIAM_MNIAM("mniammniam"),
+    BESZAMEL("bezaml"),
 }
