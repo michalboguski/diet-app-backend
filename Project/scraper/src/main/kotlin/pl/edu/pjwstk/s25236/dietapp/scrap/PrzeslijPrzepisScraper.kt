@@ -1,5 +1,8 @@
 package pl.edu.pjwstk.s25236.dietapp.scrap
 
+import com.microsoft.playwright.Locator
+import com.microsoft.playwright.options.WaitForSelectorState
+
 class PrzeslijPrzepisScraper(
     override val browser: PlaywrightBrowser,
 ) : RecipeScraper {
@@ -13,26 +16,34 @@ class PrzeslijPrzepisScraper(
     ) = if (page == 1) base else "$base?page=$page"
 
     override fun getRecipe(link: String): RawRecipe {
-        openPage(page, link)
+        browser.openPage(page, link)
 
-        val ingredients = page.locator(".recpie-ingredient ul li")
-        val steps = page.locator(
-            ".row.preparationSteps .col-12 ul li span:not(.position)"
+        val ingredientsContainer = page.locator("#recpie-ingredient")
+        ingredientsContainer.first().waitFor(
+            Locator.WaitForOptions()
+                .setState(WaitForSelectorState.ATTACHED)
+                .setTimeout(5_000.0)
         )
-        val recipeTitle = extractName(page.url())
 
-        ingredients.first().waitFor()
-        steps.first().waitFor()
+        val ingredientLines = ingredientsContainer
+        .locator("ul li")
+            .allInnerTexts()
+            .map { it.replace('\u00A0', ' ').trim() }
+            .filter { it.isNotBlank() }
 
-        val ingredientLines =
-            ingredients.allInnerTexts().flatMap { it.lines() }.map { it.trim() }.filter { it.isNotBlank() }
+        val stepsContainer = page.locator(
+            ".row.preparationSteps"
+        )
 
-        val stepLines = steps.allInnerTexts().map { it.trim() }.filter { it.isNotBlank() }
+        val stepLines = stepsContainer.locator("ul li span:not(.position)")
+            .allInnerTexts()
+            .map { it.replace('\u00A0', ' ').trim() }
+            .filter { it.isNotBlank() }
 
         return RawRecipe(
-            source = RecipeSource.PRZESLIJ_PRZEPIS,
+            source = source,
             link = page.url(),
-            title = recipeTitle,
+            title = extractName(page.url()),
             ingredientLines = ingredientLines,
             stepLines = stepLines,
         )
@@ -40,13 +51,14 @@ class PrzeslijPrzepisScraper(
 
     override fun getLinksFromPage(baseLink: String, pageNumber: Int): List<String> {
         val url = buildPageUrl(baseLink, pageNumber)
-        openPage(page, url)
-        val links: MutableList<String> = mutableListOf()
-        val recipes = page.querySelectorAll(".col-12.recipe-item")
-        recipes.forEach {
-            val link: String = it.querySelector(".row.mb20 .col-12.col-md-7 .box-item a").getAttribute("href")
-            links.add(link)
-        }
-        return links
+        browser.openPage(page, url)
+        return page.locator(
+            ".col-12.recipe-item .row.mb20 .col-12.col-md-7 .box-item a"
+        ).all()
+            .mapNotNull { it.getAttribute("href") }
+            .filter { href ->
+                "przepis" in href && "uzytkownik" !in href
+            }
+            .distinct()
     }
 }
