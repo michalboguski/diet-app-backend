@@ -2,7 +2,6 @@ package pl.edu.pjwstk.s25236.dietapp.processing
 
 import pl.edu.pjwstk.s25236.dietapp.db.ScraperDb
 import pl.edu.pjwstk.s25236.dietapp.db.ScraperRepository
-import pl.edu.pjwstk.s25236.dietapp.processing.ParseResult.ParseError.ParseErrorType
 import pl.edu.pjwstk.s25236.dietapp.processing.ProcessResult.ProcessError.ProcessErrorType
 import pl.edu.pjwstk.s25236.dietapp.processing.RecipeResult.RecipeError
 import pl.edu.pjwstk.s25236.dietapp.processing.RecipeResult.RecipeError.RecipeErrorType
@@ -15,33 +14,10 @@ class RecipeProcessor {
     val normalizer = IngredientNameNormalizer()
     private val minAcceptedWeightedScore = 0.40
 
-    val trigramCache =
-        mutableMapOf<Pair<String, Double>, ProcessResult>()
+    val trigramCache = mutableMapOf<Pair<String, Double>, ProcessResult>()
+
     var cacheHits = 0L
     var cacheMisses = 0L
-
-    var measurmentUnknownError = 0L
-    var amountError = 0L
-    var noCandidatesError = 0L
-    var toManyCandidatesError = 0L
-    var notFoundError = 0L
-    var scoreError = 0L
-
-    var unitOK = 0L
-    var amountOK = 0L
-    var candidatesOK = 0L
-    var ingredientOK = 0L
-
-    var afterParse = 0L
-    var afterProcess = 0L
-
-    val unitErrorMap = mutableMapOf<String, Int>()
-    val amountErrorMap = mutableMapOf<String, Int>()
-    val noCandidatesErrorMap = mutableMapOf<String, Int>()
-    val toManyCandidatesErrorMap = mutableMapOf<String, Int>()
-
-    val singleParseErrorPerRecipeList = mutableListOf<String>()
-    val singleProcessErrorPerRecipeList = mutableListOf<String>()
 
     val ingredientNormalizationMap: Map<String, String> = mapOf(
         "mąka ziemniaczany" to "Skrobia ziemniaczany",
@@ -72,79 +48,33 @@ class RecipeProcessor {
         var errors = 0L
         var parsed = 0L
         var processed = 0L
-        var errorLine: String = ""
-        parsedIngredients.forEachIndexed { i, toParse ->
-            when (toParse) {
+        parsedIngredients.forEach {
+            when (it) {
                 is ParseResult.ParseSuccess -> {
-                    parsed++; candidatesOK++; unitOK++; amountOK++;
+                    parsed++
                 }
 
                 is ParseResult.ParseError -> {
-
-                    val key = cleanedLines[i]
-                    errorLine = key
-                    when (toParse.type) {
-                        ParseErrorType.UNIT -> {
-                            measurmentUnknownError++
-                            unitErrorMap[key] = unitErrorMap.getOrDefault(key, 0) + 1
-                        }
-
-                        ParseErrorType.AMOUNT -> {
-                            unitOK++
-                            amountError++
-                            amountErrorMap[key] = amountErrorMap.getOrDefault(key, 0) + 1
-                        }
-
-                        ParseErrorType.NO_CANDIDATES -> {
-                            unitOK++; amountOK++
-                            noCandidatesError++
-                            noCandidatesErrorMap[key] = noCandidatesErrorMap.getOrDefault(key, 0) + 1
-                        }
-
-                        ParseErrorType.TO_MACH_CANDIDATES -> {
-                            unitOK++
-                            amountOK++
-                            toManyCandidatesError++
-                            toManyCandidatesErrorMap[key] = toManyCandidatesErrorMap.getOrDefault(key, 0) + 1
-                        }
-
-                        ParseErrorType.UNKNOWN -> {}
-                    }
                     errors++
                 }
             }
         }
-        if (errors == 1L) {
-            singleParseErrorPerRecipeList.add(errorLine)
-            errorLine = ""
-        }
         if (errors > 0L || total != parsed) return RecipeError(total, errors, RecipeErrorType.PARSE)
-        afterParse++
-        val processResults = processParsedIngredients(parsedIngredients)
 
-        processResults.forEachIndexed { i, toProcess ->
-            when (toProcess) {
+        val processResults = processParsedIngredients(parsedIngredients)
+        processResults.forEach {
+            when (it) {
                 is ProcessResult.ProcessError -> {
-                    val key = cleanedLines[i]
-                    errorLine = key
-                    when (toProcess.type) {
-                        ProcessErrorType.LOW_SCORE -> scoreError++
-                        ProcessErrorType.NOT_FOUND -> notFoundError++
-                        ProcessErrorType.UNKNOWN -> {}
-                    }
                     errors++
                 }
 
                 is ProcessResult.IngredientMatch -> {
-                    processed++; ingredientOK++
+                    processed++
                 }
             }
         }
-        if (errors == 1L) {
-            singleProcessErrorPerRecipeList.add(errorLine)
-        }
         if (errors > 0L) return RecipeError(total, errors, RecipeErrorType.PROCESS)
-        afterProcess++
+
         return if (total == processed) RecipeResult.RecipeSuccess(
             total,
             processResults.map { it as ProcessResult.IngredientMatch }.map { it.ingredientId }.toList()

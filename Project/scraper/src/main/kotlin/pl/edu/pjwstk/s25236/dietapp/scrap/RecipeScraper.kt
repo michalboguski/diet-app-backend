@@ -1,10 +1,8 @@
 package pl.edu.pjwstk.s25236.dietapp.scrap
 
-import com.microsoft.playwright.BrowserContext
-import com.microsoft.playwright.Locator
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import com.microsoft.playwright.Page
-import com.microsoft.playwright.PlaywrightException
-import com.microsoft.playwright.options.WaitUntilState
 import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
 import java.nio.file.Path
@@ -23,18 +21,29 @@ interface RecipeScraper : AutoCloseable {
 
     fun prepareServicePaths(service: String): ServicePaths {
 
-        val directory = Paths.get("data").toAbsolutePath().normalize().resolve(service)
+        val dataDirectory = Paths.get("data").toAbsolutePath().normalize()
+        val directory = dataDirectory.resolve(service)
         val paths = ServicePaths(
             directory = directory,
             state = directory.resolve("state.json"),
             links = directory.resolve("links.txt"),
             recipes = directory.resolve("recipes"),
             pages = directory.resolve("pages"),
+            progress = dataDirectory.resolve("scraper-progress.json"),
         )
         Files.createDirectories(paths.directory)
         Files.createDirectories(paths.recipes)
         Files.createDirectories(paths.pages)
         Files.newByteChannel(paths.links, StandardOpenOption.CREATE, StandardOpenOption.WRITE).use { }
+        if (!Files.exists(paths.progress)) {
+            Files.writeString(
+                paths.progress,
+                "{}",
+                StandardOpenOption.CREATE,
+                StandardOpenOption.WRITE,
+            )
+        }
+
         return paths
     }
 
@@ -52,71 +61,8 @@ interface RecipeScraper : AutoCloseable {
         page: Int,
     ): String
 
-    fun openPage(
-        page: Page,
-        link: String,
-    ): Page {
-        page.navigate(
-            link,
-            Page.NavigateOptions().setWaitUntil(WaitUntilState.DOMCONTENTLOADED).setTimeout(20_000.0),
-        )
-        clickRodo(page, source.service)
-        page.tryClosePopups()
-        return page
-    }
-
     override fun close() {
         browser.closePage(this, page)
-    }
-
-    fun clickRodo(
-        page: Page,
-        service: String,
-    ): Boolean {
-        val selectors = listOf(
-            "#accept-btn",
-            "#onetrust-accept-btn-handler",
-            "#didomi-notice-agree-button",
-            "button:has-text('Akceptuję')",
-            "button:has-text('Akceptuj wszystkie')",
-            "button:has-text('Zaakceptuj wszystkie')",
-            "button:has-text('Zgadzam się')",
-            "button:has-text('Zgadzam się na wszystkie')",
-            "button:has-text('Accept all')",
-            "button:has-text('Allow all')",
-            "button:has-text('I agree')",
-            "button:has-text('Agree and close')",
-            "[data-testid='uc-accept-all-button']",
-            "[data-testid='accept-all']",
-        )
-        val frames = page.frames()
-
-        for (frame in frames) {
-            for (selector in selectors) {
-                try {
-                    val button = frame.locator(selector).first()
-                    if (!button.isVisible) continue
-                    button.click(
-                        Locator.ClickOptions().setTimeout(1500.0)
-                    )
-                    val statePath = Paths.get(
-                        "states", "$service.json"
-                    )
-                    Files.createDirectories(statePath.parent)
-
-                    page.context().storageState(
-                        BrowserContext.StorageStateOptions().setPath(statePath)
-                    )
-                    println("Zaakceptowano RODO: $selector")
-                    return true
-                } catch (e: PlaywrightException) {
-                    println(
-                        "Nie udało się kliknąć $selector: ${e.message}"
-                    )
-                }
-            }
-        }
-        return false
     }
 
     fun getLinksFromRange(
@@ -124,9 +70,16 @@ interface RecipeScraper : AutoCloseable {
         start: Int,
         end: Int,
     ): List<String> {
+        val progressStore = ProgressStore(paths.progress)
+        val progress = progressStore.read()[source.service]
+            ?: ScraperProgress(
+                baseLink = baseLink,
+                nextPage = start,
+                endPage = end,
+            )
         return browser.use { browser ->
             this.use { scraper ->
-                val path = paths.links
+                val path = this.paths.links
                 val links = LinkedHashSet<String>()
                 if (Files.notExists(path)) {
                     Files.createFile(path)
@@ -135,18 +88,16 @@ interface RecipeScraper : AutoCloseable {
                     reader.lineSequence().filter { it.isNotBlank() }.forEach { links.add(it) }
                 }
 
-                for ((index, num) in (start..end).withIndex()) {
+                for ((index, num) in (progress.nextPage..progress.endPage).withIndex()) {
                     if (Thread.currentThread().isInterrupted) {
                         throw InterruptedException("Przerwano pobieranie linków")
                     }
 
                     val sleepMillis = when {
-                        index % 25 == 0 -> 11000
-                        index % 5 == 0 -> 2000
+                        index % 25 == 1 -> 5000
+                        index % 5 == 1 -> 1000
                         else -> 0
                     }.toLong()
-
-                    println("page: $num sleep: ${sleepMillis / 1000} second")
 
                     if (sleepMillis > 0) {
                         try {
@@ -162,6 +113,16 @@ interface RecipeScraper : AutoCloseable {
                         links.add(link)
                     }
                     saveLinks(path, links)
+                    progressStore.save(
+                        scraperId = source.service,
+                        progress = progress.copy(nextPage = num + 1),
+                    )
+                    println("${paths.directory} $baseLink $num ")
+
+                    progressStore.save(
+                        scraperId = source.service,
+                        progress = progress.copy(nextPage = num + 1),
+                    )
                 }
                 links.toList()
             }
@@ -195,26 +156,33 @@ interface RecipeScraper : AutoCloseable {
     fun processLinks() {
         browser.use {
             this.use {
-                var counter = 0
-                Files.readAllLines(paths.links).map { it.trim() }.filter { it.isNotBlank() }.forEach { link ->
-                    val file = paths.pages.resolve("${extractName(link)}.html")
-                    if (Files.exists(file)) {
-                        println("skip: $link")
-                        return@forEach
-                    }
-                    try {
-                        when {
-                            counter % 25 == 0 -> Thread.sleep(11000)
-                            counter % 5 == 0 -> Thread.sleep(2000)
+                Files.readAllLines(paths.links)
+                    .map { it.trim() }
+                    .filter { it.isNotBlank() }
+                    .filterNot { link ->
+                        Files.exists(paths.pages.resolve("${extractName(link)}.html"))
+                    }.drop(100)
+                    .let { remainingLinks ->
+                        remainingLinks.forEachIndexed { index, link ->
+                            val startTime = System.nanoTime()
+                            try {
+                                when {
+                                    index % 25 == 1 -> Thread.sleep(5000)
+                                    index % 5 == 1 -> Thread.sleep(1000)
+                                }
+                                getRecipeFromLink(link)
+                            } catch (e: InterruptedException) {
+                                Thread.currentThread().interrupt()
+                                throw e
+                            } catch (e: Exception) {
+                                print("ERROR: ${e.message}")
+                            } finally {
+                                val seconds = (System.nanoTime() - startTime) / 1_000_000_000.0
+                                print("time: %.2f s".format(seconds))
+                                println(" ${index + 1}/${remainingLinks.size} : $link")
+                            }
                         }
-                        counter++
-                        println("processed: $link")
-                        getRecipeFromLink(link)
-                    } catch (e: Exception) {
-                        println("ERROR: ${e.message}")
                     }
-
-                }
             }
         }
     }
@@ -231,7 +199,7 @@ interface RecipeScraper : AutoCloseable {
         Files.writeString(file, page.content())
     }
 
-    private fun saveRawRecipe(
+    fun saveRawRecipe(
         recipe: RawRecipe,
     ) {
 
@@ -260,4 +228,62 @@ data class ServicePaths(
     val links: Path,
     val recipes: Path,
     val pages: Path,
+    val progress: Path
 )
+
+data class ScraperLinkProgress(
+    val baseLink: String,
+    val nextPage: Int,
+    val endPage: Int,
+)
+
+data class ScraperProgress(
+    val baseLink: String,
+    val nextPage: Int,
+    val endPage: Int,
+)
+
+class ProgressStore(path: Path) {
+
+    private val path = path.toAbsolutePath()
+    private val mapper = jacksonObjectMapper()
+
+    @Synchronized
+    fun read(): Map<String, ScraperProgress> {
+        if (!Files.exists(path)) return emptyMap()
+
+        return Files.newBufferedReader(path).use { reader ->
+            mapper.readValue<Map<String, ScraperProgress>>(reader)
+        }
+    }
+
+    @Synchronized
+    fun save(scraperId: String, progress: ScraperProgress) {
+        val allProgress = read().toMutableMap()
+        allProgress[scraperId] = progress
+
+        Files.createDirectories(path.parent)
+
+        val temporaryPath = Files.createTempFile(
+            path.parent,
+            "scraper-progress-",
+            ".tmp",
+        )
+
+        try {
+            Files.newBufferedWriter(temporaryPath).use { writer ->
+                mapper.writerWithDefaultPrettyPrinter()
+                    .writeValue(writer, allProgress)
+            }
+
+            Files.move(
+                temporaryPath,
+                path,
+                StandardCopyOption.REPLACE_EXISTING,
+                StandardCopyOption.ATOMIC_MOVE,
+            )
+        } finally {
+            Files.deleteIfExists(temporaryPath)
+        }
+    }
+}

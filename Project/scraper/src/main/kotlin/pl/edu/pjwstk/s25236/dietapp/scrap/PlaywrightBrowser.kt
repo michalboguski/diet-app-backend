@@ -8,6 +8,7 @@ import com.microsoft.playwright.Page
 import com.microsoft.playwright.Playwright
 import com.microsoft.playwright.PlaywrightException
 import com.microsoft.playwright.options.ServiceWorkerPolicy
+import com.microsoft.playwright.options.WaitUntilState
 import java.net.URI
 import java.nio.file.Files
 
@@ -17,8 +18,8 @@ class PlaywrightBrowser : AutoCloseable {
 
     fun newPage(recipeScraper: RecipeScraper): Page {
         val statePath = recipeScraper.paths.state
-
-        val options = Browser.NewContextOptions().setServiceWorkers(ServiceWorkerPolicy.BLOCK)
+        val options =
+            Browser.NewContextOptions().setServiceWorkers(ServiceWorkerPolicy.BLOCK).setJavaScriptEnabled(false)
 
         if (Files.exists(statePath)) {
             options.setStorageStatePath(statePath)
@@ -27,6 +28,20 @@ class PlaywrightBrowser : AutoCloseable {
         val context = browser.newContext(options)
         context.blockAds()
         return context.newPage()
+    }
+
+    fun openPage(
+        page: Page,
+        link: String,
+    ): Page {
+
+        page.navigate(
+            link,
+            Page.NavigateOptions().setWaitUntil(WaitUntilState.COMMIT).setTimeout(20_000.0),
+        )
+        // clickRodo(page)
+        //  page.tryClosePopups()
+        return page
     }
 
     fun closePage(recipeScraper: RecipeScraper, page: Page) {
@@ -44,6 +59,44 @@ class PlaywrightBrowser : AutoCloseable {
         playwright.use { _ ->
             browser.close()
         }
+    }
+
+    fun clickRodo(
+        page: Page
+    ): Boolean {
+        val selectors = listOf(
+            "#accept-btn",
+            "#onetrust-accept-btn-handler",
+            "#didomi-notice-agree-button",
+            "button:has-text('Akceptuję')",
+            "button:has-text('Akceptuj wszystkie')",
+            "button:has-text('Zaakceptuj wszystkie')",
+            "button:has-text('Zgadzam się')",
+            "button:has-text('Zgadzam się na wszystkie')",
+            "button:has-text('Accept all')",
+            "button:has-text('Allow all')",
+            "button:has-text('I agree')",
+            "button:has-text('Agree and close')",
+            "[data-testid='uc-accept-all-button']",
+            "[data-testid='accept-all']",
+        )
+        val frames = page.frames()
+
+        for (frame in frames) {
+            for (selector in selectors) {
+                try {
+                    val button = frame.locator(selector).first()
+                    if (!button.isVisible) continue
+                    button.click(Locator.ClickOptions().setTimeout(1500.0))
+                    return true
+                } catch (e: PlaywrightException) {
+                    println(
+                        "Nie udało się kliknąć $selector: ${e.message}"
+                    )
+                }
+            }
+        }
+        return false
     }
 }
 
